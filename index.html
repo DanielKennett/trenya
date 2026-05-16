@@ -93,8 +93,24 @@
   .nav-btn.active svg { stroke: var(--ember); }
   .nav-btn:active { background: var(--surface); }
 
-  .screen { padding: 14px var(--pad) 0; display: none; max-width: 480px; margin: 0 auto; }
+  .screen { padding: 14px var(--pad) 0; display: none; max-width: 480px; margin: 0 auto; transform-origin: 50% 24px; }
   .screen.active { display: block; }
+  .reveal-item { will-change: transform, opacity; }
+  .tap-anim { position: relative; overflow: hidden; }
+  .tap-ripple {
+    position: absolute; width: 16px; height: 16px; border-radius: 999px;
+    pointer-events: none; background: currentColor; opacity: .16;
+    transform: translate(-50%, -50%) scale(0);
+    mix-blend-mode: screen;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: .001ms !important;
+    }
+  }
 
   /* ============ Typography ============ */
   h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 4px; }
@@ -119,10 +135,12 @@
   .ring-track { stroke: var(--line); }
   .ring-prog  { stroke: var(--ember); stroke-linecap: round;
                 transition: stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1); }
-  .ring-num   { position: absolute; inset: 0; display: grid; place-items: center;
-                font-family: var(--num); font-weight: 700; font-size: 22px; letter-spacing: -0.03em; }
-  .ring-num small { display: block; font-size: 9px; font-weight: 600;
-                    letter-spacing: 0.12em; color: var(--fg-3); margin-top: 1px; text-transform: uppercase; }
+  .ring-num   { position: absolute; inset: 0; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; gap: 5px; padding-top: 2px;
+                font-family: var(--num); font-weight: 700; font-size: 22px;
+                line-height: 1; letter-spacing: 0; text-align: center; }
+  .ring-num small { display: block; font-size: 9px; font-weight: 600; line-height: 1;
+                    letter-spacing: 0.10em; color: var(--fg-3); text-transform: uppercase; }
   .hero-meta .eyebrow { margin-bottom: 6px; }
   .hero-meta .h-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
   .hero-meta .h-sub   { font-size: 12px; color: var(--fg-3); margin-top: 6px;
@@ -212,12 +230,14 @@
                       font-family: var(--num); letter-spacing: 0.04em; text-transform: uppercase; }
   .day-btn.active { background: var(--ember); border-color: var(--ember); color: var(--bg); }
   .day-btn.active .d-sub { color: oklch(0.20 0.04 50); }
+  .day-btn.suggested { padding-top: 24px; }
   .day-btn.suggested::after {
-    content: "сегодня"; position: absolute; top: -7px; right: 8px;
+    content: "сегодня"; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
     background: var(--good); color: var(--bg);
     font-family: var(--num); font-size: 9px; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    padding: 3px 7px; border-radius: 6px;
+    line-height: 1; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 999px; white-space: nowrap; z-index: 2;
+    box-shadow: 0 2px 8px oklch(0 0 0 / 0.25);
   }
 
   /* ============ EXERCISE CARD ============ */
@@ -266,9 +286,26 @@
     display: flex; align-items: center; gap: 8px; cursor: pointer;
     font-family: var(--sans);
   }
+  .suggest-tip.hold { background: var(--gold-soft); color: var(--gold); border-top-color: oklch(0.85 0.13 95 / 0.25); }
+  .suggest-tip.down { background: var(--bad-soft); color: var(--bad); border-top-color: oklch(0.68 0.18 25 / 0.25); }
   .suggest-tip b { font-family: var(--num); font-weight: 700; }
   .suggest-tip:active { background: oklch(0.78 0.14 145 / 0.22); }
   .suggest-tip svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .draft-banner {
+    background: var(--info-soft); border: 1px solid oklch(0.78 0.10 240 / 0.32);
+    color: var(--info); border-radius: var(--r-md);
+    padding: 12px; margin-bottom: 14px; display: grid; gap: 10px;
+    font-size: 13px; line-height: 1.45;
+  }
+  .draft-actions { display: flex; gap: 8px; }
+  .draft-actions button {
+    flex: 1; padding: 10px; border-radius: 10px;
+    background: var(--surface); color: var(--fg);
+    border: 1px solid var(--line-soft); font-family: var(--sans);
+    font-weight: 700; cursor: pointer;
+  }
+  .draft-actions button:last-child { color: var(--bad); }
 
   .sets { padding: 4px 0 2px; }
   .header-labels {
@@ -391,6 +428,24 @@
   }
   .workout-note-section textarea:focus { outline: none; border-color: var(--ember); }
   .workout-note-section textarea::placeholder { color: var(--fg-4); }
+  .exercise-note-section {
+    margin-top: 12px; padding: 12px;
+    background: oklch(0.165 0.007 55 / 0.72);
+    border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  }
+  .exercise-note-section label {
+    display: block; margin-bottom: 8px;
+    font-family: var(--num); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .exercise-note-section textarea {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--line-soft);
+    color: var(--fg); padding: 10px 11px; border-radius: 10px;
+    font-family: var(--sans); font-size: 14px; line-height: 1.4;
+    resize: vertical; min-height: 58px; -webkit-appearance: none;
+  }
+  .exercise-note-section textarea:focus { outline: none; border-color: var(--ember); }
+  .exercise-note-section textarea::placeholder { color: var(--fg-4); }
 
   /* ============ HISTORY ============ */
   .history-day {
@@ -477,6 +532,39 @@
     -webkit-appearance: none;
   }
   .measure-field input:focus { outline: none; border-color: var(--ember); }
+  .ideal-goals { display: grid; gap: 8px; margin-top: 12px; }
+  .goal-profile {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+  }
+  .goal-profile button {
+    padding: 11px 8px; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--line-soft);
+    color: var(--fg-3); font-family: var(--sans); font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
+  .goal-profile button.active {
+    background: var(--ember); border-color: var(--ember); color: var(--bg);
+  }
+  .goal-formula-note {
+    color: var(--fg-3); font-size: 12px; line-height: 1.45;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    border-radius: 10px; padding: 10px 12px; margin: 10px 0 12px;
+  }
+  .ideal-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 12px; background: var(--bg-soft);
+    border: 1px solid var(--line-soft); border-radius: 10px;
+  }
+  .ideal-row span:first-child {
+    color: var(--fg-3); font-family: var(--num); font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .ideal-row b { font-family: var(--num); font-size: 14px; color: var(--fg); }
+  .ideal-empty {
+    color: var(--fg-3); font-size: 13px; line-height: 1.5;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    border-radius: 10px; padding: 12px;
+  }
 
   /* ============ MODAL ============ */
   .modal-bg {
@@ -518,10 +606,46 @@
     font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer;
   }
   .editor-day-tab button.active { background: var(--ember); color: var(--bg); border-color: var(--ember); }
+  .program-editor { display: grid; gap: 12px; }
+  .program-editor-top {
+    position: sticky; top: -22px; z-index: 3;
+    background: var(--bg-soft); padding-top: 4px; padding-bottom: 10px;
+  }
+  .editor-field { display: grid; gap: 6px; }
+  .editor-field label {
+    font-family: var(--num); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .editor-input {
+    width: 100%; min-width: 0; background: var(--surface-2);
+    border: 1px solid var(--line-soft); color: var(--fg);
+    padding: 11px 12px; border-radius: 10px; font-size: 14px;
+    -webkit-appearance: none; font-family: var(--sans);
+  }
+  .editor-input:focus { outline: none; border-color: var(--ember); }
+  .editor-input.num { text-align: center; font-family: var(--num); font-weight: 700; }
+  .editor-section-title {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 8px 0 2px;
+  }
+  .editor-section-title span:first-child {
+    font-family: var(--num); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3);
+  }
+  .editor-section-title span:last-child { color: var(--fg-4); font-size: 12px; }
   .editor-ex {
     background: var(--surface); border: 1px solid var(--line-soft);
-    border-radius: 12px; padding: 12px; margin-bottom: 8px;
+    border-radius: var(--r-md); padding: 12px; margin-bottom: 10px;
   }
+  .editor-ex-head {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin-bottom: 10px;
+  }
+  .editor-ex-num {
+    font-family: var(--num); font-size: 11px; font-weight: 700;
+    color: var(--ember); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .editor-ex-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
   .editor-ex-row input {
     background: var(--surface-2); border: 1px solid var(--line-soft); color: var(--fg);
@@ -538,6 +662,8 @@
     border: 1px solid var(--line-soft); border-radius: 7px;
     font-size: 12px; cursor: pointer; font-family: var(--sans);
   }
+  .editor-ex-head .editor-ex-actions { margin-top: 0; flex: 0 0 auto; }
+  .editor-ex-head .editor-ex-actions button { width: 38px; flex: 0 0 38px; }
   .editor-ex-actions button.del { color: var(--bad); }
   .editor-swap {
     background: var(--surface-2); border: 1px solid var(--line-soft); color: var(--fg);
@@ -622,8 +748,6 @@
 <!-- DASHBOARD -->
 <div class="screen active" id="screen-dashboard">
   <div class="eyebrow" id="dash-date"></div>
-  <h1>Здарова.</h1>
-  <div class="subtitle" id="dash-tagline">Возьмём вес.</div>
   <div id="dash-content"></div>
 </div>
 
@@ -643,12 +767,13 @@
     </div>
   </div>
   <div id="deload-banner"></div>
+  <div id="draft-banner"></div>
   <div class="day-selector" id="day-selector"></div>
   <div id="exercises-list"></div>
   <div id="workout-note-container" style="display:none">
     <div class="workout-note-section">
       <label>Заметка к тренировке (необязательно)</label>
-      <textarea id="workout-note" placeholder="Как себя чувствовал? Что было сложно/легко? Что заметил?"></textarea>
+      <textarea id="workout-note" placeholder="Как себя чувствовал? Что было сложно/легко? Что заметил?" oninput="updateWorkoutNote(this.value)"></textarea>
     </div>
   </div>
   <button class="btn-primary" id="finish-btn" style="display:none">Завершить тренировку</button>
@@ -670,20 +795,41 @@
     <h3 style="font-size: 14px; margin-bottom: 12px;">Новый замер</h3>
     <div class="measure-grid">
       <div class="measure-field"><label>Вес, кг</label><input type="number" id="m-weight" inputmode="decimal"></div>
+      <div class="measure-field"><label>Рост, см</label><input type="number" id="m-height" inputmode="decimal"></div>
+      <div class="measure-field"><label>Запястье, см</label><input type="number" id="m-wrist" inputmode="decimal"></div>
+      <div class="measure-field"><label>Шея, см</label><input type="number" id="m-neck" inputmode="decimal"></div>
+      <div class="measure-field"><label>Плечи, см</label><input type="number" id="m-shoulders" inputmode="decimal"></div>
+      <div class="measure-field"><label>Грудь, см</label><input type="number" id="m-chest" inputmode="decimal"></div>
       <div class="measure-field"><label>Талия, см</label><input type="number" id="m-waist" inputmode="decimal"></div>
+      <div class="measure-field"><label>Таз/ягодицы, см</label><input type="number" id="m-hips" inputmode="decimal"></div>
       <div class="measure-field"><label>Бицепс, см</label><input type="number" id="m-biceps" inputmode="decimal"></div>
+      <div class="measure-field"><label>Предплечье, см</label><input type="number" id="m-forearm" inputmode="decimal"></div>
       <div class="measure-field"><label>Бедро, см</label><input type="number" id="m-thigh" inputmode="decimal"></div>
+      <div class="measure-field"><label>Икра, см</label><input type="number" id="m-calf" inputmode="decimal"></div>
     </div>
     <button class="btn-primary" onclick="saveMeasure()">Сохранить замер</button>
   </div>
   <div class="measure-form">
     <h3 style="font-size: 14px; margin-bottom: 12px;">Цели на конец программы</h3>
+    <div class="goal-profile" id="goal-profile">
+      <button type="button" data-profile="male" onclick="setGoalProfile('male')">Мужской расчет</button>
+      <button type="button" data-profile="female" onclick="setGoalProfile('female')">Женский расчет</button>
+    </div>
+    <div class="goal-formula-note" id="goal-formula-note"></div>
     <div class="measure-grid">
       <div class="measure-field"><label>Цель: вес, кг</label><input type="number" id="g-weight" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: шея, см</label><input type="number" id="g-neck" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: плечи, см</label><input type="number" id="g-shoulders" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: грудь, см</label><input type="number" id="g-chest" inputmode="decimal" onchange="saveGoal()"></div>
       <div class="measure-field"><label>Цель: талия, см</label><input type="number" id="g-waist" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: таз, см</label><input type="number" id="g-hips" inputmode="decimal" onchange="saveGoal()"></div>
       <div class="measure-field"><label>Цель: бицепс, см</label><input type="number" id="g-biceps" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: предплечье, см</label><input type="number" id="g-forearm" inputmode="decimal" onchange="saveGoal()"></div>
       <div class="measure-field"><label>Цель: бедро, см</label><input type="number" id="g-thigh" inputmode="decimal" onchange="saveGoal()"></div>
+      <div class="measure-field"><label>Цель: икра, см</label><input type="number" id="g-calf" inputmode="decimal" onchange="saveGoal()"></div>
     </div>
+    <div id="ideal-goals" class="ideal-goals"></div>
+    <button class="btn-secondary" onclick="applyIdealGoals()">Заполнить пустые цели формулой</button>
   </div>
   <h2>Динамика</h2>
   <div id="measure-charts"></div>
@@ -735,12 +881,11 @@
   <button class="btn-secondary" onclick="openProgramEditor()">✏️ Редактировать программу</button>
   <button class="btn-secondary" onclick="newProgramVersion()">🆕 Новая версия программы</button>
   
-  <h2>Экспорт</h2>
-  <button class="btn-secondary" onclick="exportData()">📋 Скопировать JSON</button>
-  <button class="btn-secondary" onclick="downloadData()">⬇️ Скачать backup.json</button>
-  <button class="btn-secondary" onclick="exportText()">📄 Экспорт в текст</button>
+  <h2>Резервная копия</h2>
+  <div class="info-box">Один формат для всего: тренировки, замеры, цели, настройки и программа. Скачай файл, чтобы потом восстановить данные на этом или другом телефоне.</div>
+  <button class="btn-secondary" onclick="downloadData()">⬇️ Скачать резервную копию</button>
   <input class="file-input" type="file" id="import-data-file" accept=".json,application/json" onchange="importDataFile(this.files[0]); this.value='';">
-  <button class="btn-secondary" onclick="document.getElementById('import-data-file').click()">⬆️ Импортировать backup.json</button>
+  <button class="btn-secondary" onclick="document.getElementById('import-data-file').click()">⬆️ Восстановить из копии</button>
   
   <h2 style="color: #c33;">Опасная зона</h2>
   <button class="btn-secondary" style="border-color:#5a1a1a;color:#c33;" onclick="resetAll()">🗑 Удалить все данные</button>
@@ -813,17 +958,62 @@ let timerSeconds = 0;
 let activeSwapExIdx = null;
 let editorDay = "upperA";
 
+function escapeHTML(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[ch]);
+}
+
+const MEASURE_FIELDS = [
+  { key: 'weight', label: 'Вес', unit: 'кг', color: '#ff6b00' },
+  { key: 'height', label: 'Рост', unit: 'см', color: '#8f8f8f' },
+  { key: 'wrist', label: 'Запястье', unit: 'см', color: '#a68bff' },
+  { key: 'neck', label: 'Шея', unit: 'см', color: '#4a9eff' },
+  { key: 'shoulders', label: 'Плечи', unit: 'см', color: '#ff9f43' },
+  { key: 'chest', label: 'Грудь', unit: 'см', color: '#5fcf6f' },
+  { key: 'waist', label: 'Талия', unit: 'см', color: '#4a9eff' },
+  { key: 'hips', label: 'Таз', unit: 'см', color: '#ff7eb6' },
+  { key: 'biceps', label: 'Бицепс', unit: 'см', color: '#5fcf6f' },
+  { key: 'forearm', label: 'Предплечье', unit: 'см', color: '#9bdc65' },
+  { key: 'thigh', label: 'Бедро', unit: 'см', color: '#c878ff' },
+  { key: 'calf', label: 'Икра', unit: 'см', color: '#ffc857' }
+];
+const GOAL_FIELDS = MEASURE_FIELDS.filter(f => !['height', 'wrist'].includes(f.key));
+
+function numberFromInput(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const raw = String(el.value || '').replace(',', '.');
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value : null;
+}
+function round1(value) {
+  return Math.round(value * 10) / 10;
+}
+
 // ===== STORAGE =====
-function getHistory() { return JSON.parse(localStorage.getItem('workout_history') || '[]'); }
+function readJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+function getHistory() { return readJSON('workout_history', []); }
 function saveHistory(h) { localStorage.setItem('workout_history', JSON.stringify(h)); }
-function getMeasures() { return JSON.parse(localStorage.getItem('measures') || '[]'); }
+function getMeasures() { return readJSON('measures', []); }
 function saveMeasures(m) { localStorage.setItem('measures', JSON.stringify(m)); }
-function getGoals() { return JSON.parse(localStorage.getItem('goals') || '{}'); }
+function getGoals() { return readJSON('goals', {}); }
 function saveGoals(g) { localStorage.setItem('goals', JSON.stringify(g)); }
 function getProgram() {
-  const stored = localStorage.getItem('program');
+  const stored = readJSON('program', null);
   if (!stored) { localStorage.setItem('program', JSON.stringify(DEFAULT_PROGRAM)); return DEFAULT_PROGRAM; }
-  return JSON.parse(stored);
+  return stored;
 }
 function saveProgram(p) { localStorage.setItem('program', JSON.stringify(p)); }
 function getStartDate() {
@@ -832,8 +1022,25 @@ function getStartDate() {
   return d;
 }
 function setStartDate(d) { localStorage.setItem('start_date', d); updateWeekDisplay(); renderDashboard(); }
-function getSettings() { return JSON.parse(localStorage.getItem('settings') || '{"timer":false,"suggest":true,"vibrate":true,"sound":false,"autoclose":true}'); }
+function getSettings() {
+  return Object.assign(
+    { timer: true, suggest: true, vibrate: true, sound: false, autoclose: true },
+    readJSON('settings', {})
+  );
+}
 function saveSettings(s) { localStorage.setItem('settings', JSON.stringify(s)); }
+function getWorkoutDraft() { return readJSON('workout_draft', null); }
+function saveWorkoutDraft() {
+  if (!currentWorkout) return;
+  localStorage.setItem('workout_draft', JSON.stringify({ currentDay, workout: currentWorkout, saved_at: new Date().toISOString() }));
+}
+function clearWorkoutDraft() { localStorage.removeItem('workout_draft'); }
+function hasWorkoutInput(workout = currentWorkout) {
+  if (!workout) return false;
+  return !!(workout.note || workout.exercises.some(ex =>
+    ex.note || ex.sets.some(s => s.weight || s.reps || s.rir || s.done)
+  ));
+}
 
 // ===== HELPERS =====
 function getLastExerciseData(exerciseName) {
@@ -843,6 +1050,23 @@ function getLastExerciseData(exerciseName) {
     if (ex && ex.sets.some(s => s.weight || s.reps)) return ex;
   }
   return null;
+}
+function getProgramExerciseDef(exerciseName) {
+  const program = getProgram();
+  for (const dayKey of Object.keys(program.days)) {
+    const found = program.days[dayKey].exercises.find(e => e.name === exerciseName);
+    if (found) return found;
+  }
+  return null;
+}
+function normalizeNumber(value) {
+  const n = parseFloat(String(value || '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+function fmtNum(value) {
+  const n = normalizeNumber(value);
+  if (n == null) return '';
+  return Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
 }
 function getCurrentWeek() {
   const start = new Date(getStartDate());
@@ -915,27 +1139,109 @@ function isPR(exerciseName, weight, reps) {
 function suggestNextWeight(exerciseName) {
   const last = getLastExerciseData(exerciseName);
   if (!last) return null;
-  const program = getProgram();
-  let exDef = null;
-  for (const dayKey of Object.keys(program.days)) {
-    const found = program.days[dayKey].exercises.find(e => e.name === exerciseName);
-    if (found) { exDef = found; break; }
-  }
+  const exDef = getProgramExerciseDef(exerciseName);
   if (!exDef) return null;
   const validSets = last.sets.filter(s => s.weight && s.reps);
   if (validSets.length < exDef.sets) return null;
-  // Check: all sets at or above reps_max with RIR <= 1
-  let allHit = true;
-  let lastWeight = 0;
+  let topWeight = 0;
+  let hardMisses = 0;
+  let easyHits = 0;
+  let totalRir = 0;
+  let rirCount = 0;
   for (const s of validSets) {
     const r = parseInt(s.reps);
-    const rir = s.rir !== '' && s.rir != null ? parseInt(s.rir) : 99;
+    const rir = s.rir !== '' && s.rir != null ? parseInt(s.rir) : null;
     const w = parseFloat(s.weight);
-    if (r < exDef.reps_max || rir > 1) { allHit = false; break; }
-    if (w > lastWeight) lastWeight = w;
+    if (w > topWeight) topWeight = w;
+    if (r < exDef.reps_min || (rir != null && rir <= 0 && r < exDef.reps_max)) hardMisses++;
+    if (r >= exDef.reps_max && (rir == null || rir <= 2)) easyHits++;
+    if (rir != null) { totalRir += rir; rirCount++; }
   }
-  if (!allHit || !exDef.increment) return null;
-  return { from: lastWeight, to: lastWeight + exDef.increment, increment: exDef.increment };
+  if (!topWeight || !exDef.increment) return null;
+  const avgRir = rirCount ? totalRir / rirCount : null;
+  if (easyHits === validSets.length && (avgRir == null || avgRir <= 1.5)) {
+    return { action: 'up', from: topWeight, to: topWeight + exDef.increment, increment: exDef.increment, text: `В прошлый раз всё выбил — попробуй ${fmtNum(topWeight + exDef.increment)} кг` };
+  }
+  if (hardMisses >= Math.ceil(validSets.length / 2)) {
+    const to = Math.max(0, topWeight - exDef.increment);
+    return { action: 'down', from: topWeight, to, increment: exDef.increment, text: `Было тяжело — можно снизить до ${fmtNum(to)} кг` };
+  }
+  return { action: 'hold', from: topWeight, to: topWeight, increment: 0, text: `Оставь ${fmtNum(topWeight)} кг и добери повторения` };
+}
+
+// ===== MOTION =====
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function animateScreen(screen) {
+  if (!screen || prefersReducedMotion() || !screen.animate) return;
+  screen.animate([
+    { opacity: 0, transform: 'translateY(10px) scale(.992)' },
+    { opacity: 1, transform: 'translateY(0) scale(1)' }
+  ], { duration: 240, easing: 'cubic-bezier(.2,.7,.2,1)' });
+
+  const items = screen.querySelectorAll('.hero, .cta, .deload-banner, .stat, .week-bar, .day-btn, .exercise, .chart-card, .measure-form, .history-day, .info-box, .toggle-row, .btn-primary, .btn-secondary');
+  items.forEach((item, i) => {
+    item.classList.add('reveal-item');
+    item.animate([
+      { opacity: 0, transform: 'translateY(12px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], {
+      duration: 260,
+      delay: Math.min(i, 8) * 28,
+      easing: 'cubic-bezier(.2,.7,.2,1)'
+    });
+  });
+}
+function animateDashboard() {
+  if (prefersReducedMotion()) return;
+
+  const ring = document.querySelector('#dash-content .ring-prog');
+  if (ring) {
+    const total = ring.getAttribute('stroke-dasharray');
+    const target = ring.getAttribute('data-target-offset') || ring.getAttribute('stroke-dashoffset');
+    ring.style.strokeDashoffset = total;
+    requestAnimationFrame(() => {
+      ring.style.strokeDashoffset = target;
+    });
+  }
+
+  document.querySelectorAll('[data-count-to]').forEach((el) => {
+    const target = Number(el.dataset.countTo);
+    if (!Number.isFinite(target)) return;
+    const suffix = el.dataset.suffix || '';
+    const duration = 520;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+function initTapAnimations() {
+  document.addEventListener('pointerdown', (event) => {
+    const target = event.target.closest('button, .toggle');
+    if (!target || prefersReducedMotion()) return;
+    target.classList.add('tap-anim');
+    const rect = target.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'tap-ripple';
+    ripple.style.left = `${event.clientX - rect.left}px`;
+    ripple.style.top = `${event.clientY - rect.top}px`;
+    const size = Math.max(rect.width, rect.height) * 2.4;
+    target.appendChild(ripple);
+    if (!ripple.animate) {
+      ripple.remove();
+      return;
+    }
+    ripple.animate([
+      { transform: 'translate(-50%, -50%) scale(0)', opacity: .18 },
+      { transform: `translate(-50%, -50%) scale(${size / 16})`, opacity: 0 }
+    ], { duration: 420, easing: 'cubic-bezier(.2,.7,.2,1)' }).onfinish = () => ripple.remove();
+  });
 }
 
 // ===== NAV =====
@@ -944,13 +1250,15 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-' + btn.dataset.screen).classList.add('active');
+    const screen = document.getElementById('screen-' + btn.dataset.screen);
+    screen.classList.add('active');
     if (btn.dataset.screen === 'dashboard') renderDashboard();
     if (btn.dataset.screen === 'workout') renderDaySelector();
     if (btn.dataset.screen === 'history') renderHistory();
     if (btn.dataset.screen === 'progress') initProgress();
     if (btn.dataset.screen === 'measure') renderMeasures();
     if (btn.dataset.screen === 'settings') initSettings();
+    animateScreen(screen);
   });
 });
 
@@ -967,14 +1275,6 @@ function renderDashboard() {
 
   const dateEl = document.getElementById('dash-date');
   if (dateEl) dateEl.textContent = today.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  const tagEl = document.getElementById('dash-tagline');
-  if (tagEl) {
-    if (thisWeekDone === 0) tagEl.textContent = 'Возьмём вес.';
-    else if (thisWeekDone >= 3) tagEl.textContent = 'Неделя закрыта. Молодец.';
-    else if (suggested) tagEl.textContent = `Ещё ${3 - thisWeekDone} на неделе.`;
-    else tagEl.textContent = 'Можно ещё одну.';
-  }
 
   const lastWorkout = getHistory()[getHistory().length - 1];
   let daysSince = '—';
@@ -996,7 +1296,7 @@ function renderDashboard() {
       <svg viewBox="0 0 96 96">
         <circle class="ring-track" cx="48" cy="48" r="${R}" fill="none" stroke-width="6"/>
         <circle class="ring-prog"  cx="48" cy="48" r="${R}" fill="none" stroke-width="6"
-                stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${wkOff.toFixed(2)}"/>
+                stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${wkOff.toFixed(2)}" data-target-offset="${wkOff.toFixed(2)}"/>
       </svg>
       <div class="ring-num">${week}<small>из 12</small></div>
     </div>
@@ -1020,8 +1320,8 @@ function renderDashboard() {
       <div class="cta-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="6,4 20,12 6,20" fill="currentColor" stroke="none"/></svg></div>
       <div class="cta-text">
         <div class="cta-eyebrow">Следующая тренировка</div>
-        <div class="cta-title">${sugTitle}</div>
-        <div class="h-sub" style="margin-top:3px">${sugSub}</div>
+        <div class="cta-title">${escapeHTML(sugTitle)}</div>
+        <div class="h-sub" style="margin-top:3px">${escapeHTML(sugSub)}</div>
       </div>
     </button>`;
   } else if (thisWeekDone >= 3) {
@@ -1038,24 +1338,27 @@ function renderDashboard() {
   // Stat grid
   html += `<h2>Сводка</h2>
   <div class="stat-grid">
-    <div class="stat"><div class="stat-val flame">${streak}<span class="unit">нед.</span></div><div class="stat-lbl">Стрик</div></div>
-    <div class="stat"><div class="stat-val">${totalWorkouts}</div><div class="stat-lbl">Всего трен.</div></div>
+    <div class="stat"><div class="stat-val flame"><span data-count-to="${streak}">${streak}</span><span class="unit">нед.</span></div><div class="stat-lbl">Стрик</div></div>
+    <div class="stat"><div class="stat-val"><span data-count-to="${totalWorkouts}">${totalWorkouts}</span></div><div class="stat-lbl">Всего трен.</div></div>
     <div class="stat"><div class="stat-val">${daysSince}</div><div class="stat-lbl">Последняя</div></div>
-    <div class="stat"><div class="stat-val">${Math.max(0, 12 - week)}<span class="unit">нед.</span></div><div class="stat-lbl">Осталось</div></div>
+    <div class="stat"><div class="stat-val"><span data-count-to="${Math.max(0, 12 - week)}">${Math.max(0, 12 - week)}</span><span class="unit">нед.</span></div><div class="stat-lbl">Осталось</div></div>
   </div>`;
 
   document.getElementById('dash-content').innerHTML = html;
+  animateDashboard();
 }
 function startWorkoutFromDash(dayKey) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.nav-btn[data-screen="workout"]').classList.add('active');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-workout').classList.add('active');
+  const screen = document.getElementById('screen-workout');
+  screen.classList.add('active');
   renderDaySelector();
   startWorkout(dayKey);
   document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`.day-btn[data-day="${dayKey}"]`);
   if (btn) btn.classList.add('active');
+  animateScreen(screen);
 }
 
 // ===== WORKOUT =====
@@ -1072,6 +1375,7 @@ function renderDaySelector() {
       sel.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       startWorkout(btn.dataset.day);
+      animateScreen(document.getElementById('screen-workout'));
     });
   });
   updateWeekDisplay();
@@ -1079,6 +1383,7 @@ function renderDaySelector() {
   const week = getCurrentWeek();
   document.getElementById('deload-banner').innerHTML = isDeloadWeek(week) 
     ? `<div class="deload-banner"><div class="deload-icon">!</div><div><b>Неделя 7 — Deload.</b> Веса −40%, RIR 3.</div></div>` : '';
+  renderDraftBanner();
 }
 
 function updateWeekDisplay() {
@@ -1095,9 +1400,53 @@ function updateWeekDisplay() {
     const btn = document.querySelector(`.day-btn[data-day="${sug}"]`);
     if (btn) btn.classList.add('suggested');
   }
+  if (currentDay) {
+    const active = document.querySelector(`.day-btn[data-day="${currentDay}"]`);
+    if (active) active.classList.add('active');
+  }
+}
+
+function renderDraftBanner() {
+  const holder = document.getElementById('draft-banner');
+  if (!holder) return;
+  const draft = getWorkoutDraft();
+  if (!draft || currentWorkout) {
+    holder.innerHTML = '';
+    return;
+  }
+  const d = draft.saved_at ? new Date(draft.saved_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  holder.innerHTML = `<div class="draft-banner">
+    <div><b>Есть незавершенная тренировка.</b>${d ? ` Сохранена ${d}.` : ''}</div>
+    <div class="draft-actions">
+      <button onclick="restoreWorkoutDraft()">Продолжить</button>
+      <button onclick="discardWorkoutDraft()">Удалить</button>
+    </div>
+  </div>`;
+}
+function restoreWorkoutDraft() {
+  const draft = getWorkoutDraft();
+  if (!draft || !draft.workout) return;
+  currentDay = draft.currentDay || draft.workout.day;
+  currentWorkout = draft.workout;
+  document.getElementById('workout-title').textContent = currentWorkout.dayName;
+  const d = new Date(currentWorkout.date);
+  document.getElementById('workout-date').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', b.dataset.day === currentDay));
+  document.getElementById('workout-note').value = currentWorkout.note || '';
+  document.getElementById('finish-btn').style.display = 'block';
+  document.getElementById('workout-note-container').style.display = 'block';
+  renderDraftBanner();
+  renderExercises();
+}
+function discardWorkoutDraft() {
+  if (!confirm('Удалить черновик тренировки?')) return;
+  clearWorkoutDraft();
+  renderDraftBanner();
 }
 
 function startWorkout(dayKey) {
+  if (currentWorkout && hasWorkoutInput() && !confirm('Текущая тренировка не завершена. Начать новую и заменить черновик?')) return;
+  if (!currentWorkout && getWorkoutDraft() && !confirm('Есть незавершенная тренировка. Начать новую и заменить черновик?')) return;
   const program = getProgram();
   currentDay = dayKey;
   const day = program.days[dayKey];
@@ -1108,19 +1457,37 @@ function startWorkout(dayKey) {
     week: getCurrentWeek(),
     programVersion: program.version,
     note: '',
-    exercises: day.exercises.map(ex => ({
-      name: ex.name,
-      target: ex.target,
-      rest: ex.rest,
-      sets: Array(ex.sets).fill(null).map(() => ({ weight: '', reps: '', rir: '', done: false }))
-    }))
+    exercises: day.exercises.map(ex => createWorkoutExercise(ex))
   };
   document.getElementById('workout-title').textContent = day.name;
   const d = new Date();
   document.getElementById('workout-date').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
   renderExercises();
+  saveWorkoutDraft();
+  renderDraftBanner();
   document.getElementById('finish-btn').style.display = 'block';
   document.getElementById('workout-note-container').style.display = 'block';
+}
+
+function createWorkoutExercise(ex) {
+  const last = getLastExerciseData(ex.name);
+  const suggestion = getSettings().suggest ? suggestNextWeight(ex.name) : null;
+  const targetWeight = suggestion ? suggestion.to : null;
+  return {
+    name: ex.name,
+    target: ex.target,
+    rest: ex.rest,
+    note: '',
+    sets: Array(ex.sets).fill(null).map((_, idx) => {
+      const lastSet = last && last.sets[idx];
+      return {
+        weight: targetWeight != null ? fmtNum(targetWeight) : (lastSet && lastSet.weight ? lastSet.weight : ''),
+        reps: lastSet && lastSet.reps ? lastSet.reps : '',
+        rir: '',
+        done: false
+      };
+    })
+  };
 }
 
 function renderExercises() {
@@ -1131,17 +1498,19 @@ function renderExercises() {
     const last = getLastExerciseData(ex.name);
     const lastText = last ? formatLastSets(last.sets) : '';
     const suggestion = settings.suggest ? suggestNextWeight(ex.name) : null;
+    const safeName = escapeHTML(ex.name);
+    const safeTarget = escapeHTML(ex.target || '');
 
     const card = document.createElement('div');
     card.className = 'exercise';
     card.innerHTML = `
       <div class="exercise-header">
         <div style="flex: 1; min-width: 0;">
-          <div class="exercise-name">${ex.name}</div>
-          <div class="exercise-target">${ex.target}</div>
+          <div class="exercise-name">${safeName}</div>
+          <div class="exercise-target">${safeTarget}</div>
         </div>
         <div class="exercise-meta">
-          ${lastText ? `<div class="last-time" title="Прошлый раз">⏮ ${lastText}</div>` : ''}
+          ${lastText ? `<div class="last-time" title="Прошлый раз">⏮ ${escapeHTML(lastText)}</div>` : ''}
         </div>
       </div>
       <div class="ex-toolbar">
@@ -1149,10 +1518,14 @@ function renderExercises() {
         <button class="icon-btn" onclick="moveExercise(${exIdx}, 1)" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''} aria-label="Вниз">↓</button>
         <button class="icon-btn" onclick="openSwap(${exIdx})">⇄ Замена</button>
       </div>
-      ${suggestion ? `<div class="suggest-tip" onclick="applySuggestion(${exIdx}, ${suggestion.to})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.5 1 2.3v1h6v-1c0-.8.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>В прошлый раз всё выбил — попробуй <b>${suggestion.to} кг</b> (+${suggestion.increment})</div>` : ''}
+      ${suggestion ? `<div class="suggest-tip ${suggestion.action}" onclick="applySuggestion(${exIdx}, ${suggestion.to})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.5 1 2.3v1h6v-1c0-.8.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>${escapeHTML(suggestion.text)}</div>` : ''}
       <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span></div>
       <div class="sets">${ex.sets.map((s, sIdx) => renderSetRow(exIdx, sIdx, s, last)).join('')}</div>
       ${last ? renderCompareRow(ex, last) : ''}
+      <div class="exercise-note-section">
+        <label for="exercise-note-${exIdx}">Заметка к упражнению</label>
+        <textarea id="exercise-note-${exIdx}" placeholder="Техника, ощущения, боль, что поменять в следующий раз" oninput="updateExerciseNote(${exIdx}, this.value)">${escapeHTML(ex.note || '')}</textarea>
+      </div>
       <button class="add-set" onclick="addSet(${exIdx})">+ Добавить подход</button>
     `;
     list.appendChild(card);
@@ -1191,36 +1564,56 @@ function formatLastSets(sets) {
 
 function renderSetRow(exIdx, sIdx, set, lastEx) {
   const lastSet = lastEx && lastEx.sets[sIdx];
-  const wPh = lastSet ? lastSet.weight : '';
-  const rPh = lastSet ? lastSet.reps : '';
+  const wPh = lastSet ? escapeHTML(lastSet.weight) : '';
+  const rPh = lastSet ? escapeHTML(lastSet.reps) : '';
   return `
     <div class="set-row ${set.done ? 'done' : ''}">
       <div class="set-num">${sIdx + 1}</div>
-      <input type="number" inputmode="decimal" class="set-input ${set.done ? 'done' : ''}" placeholder="${wPh}" value="${set.weight}" onchange="updateSet(${exIdx}, ${sIdx}, 'weight', this.value)">
-      <input type="number" inputmode="numeric" class="set-input ${set.done ? 'done' : ''}" placeholder="${rPh}" value="${set.reps}" onchange="updateSet(${exIdx}, ${sIdx}, 'reps', this.value)">
-      <input type="number" inputmode="numeric" class="rir-input" placeholder="–" value="${set.rir}" min="0" max="5" onchange="updateSet(${exIdx}, ${sIdx}, 'rir', this.value)">
+      <input type="number" inputmode="decimal" class="set-input ${set.done ? 'done' : ''}" placeholder="${wPh}" value="${escapeHTML(set.weight)}" onchange="updateSet(${exIdx}, ${sIdx}, 'weight', this.value)">
+      <input type="number" inputmode="numeric" class="set-input ${set.done ? 'done' : ''}" placeholder="${rPh}" value="${escapeHTML(set.reps)}" onchange="updateSet(${exIdx}, ${sIdx}, 'reps', this.value)">
+      <input type="number" inputmode="numeric" class="rir-input" placeholder="–" value="${escapeHTML(set.rir)}" min="0" max="5" onchange="updateSet(${exIdx}, ${sIdx}, 'rir', this.value)">
       <button class="check-btn ${set.done ? 'done' : ''}" onclick="toggleSet(${exIdx}, ${sIdx})" aria-label="Отметить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg></button>
     </div>
   `;
 }
 
 function applySuggestion(exIdx, weight) {
-  currentWorkout.exercises[exIdx].sets.forEach(s => { if (!s.weight) s.weight = weight; });
+  currentWorkout.exercises[exIdx].sets.forEach(s => { if (!s.weight) s.weight = fmtNum(weight); });
+  saveWorkoutDraft();
   renderExercises();
 }
 function updateSet(exIdx, sIdx, field, value) {
-  currentWorkout.exercises[exIdx].sets[sIdx][field] = value;
-  // Re-render only the comparison row, do a full re-render for simplicity
+  const set = currentWorkout.exercises[exIdx].sets[sIdx];
+  set[field] = value;
+  if ((field === 'weight' || field === 'reps') && set.weight && set.reps && !set.done) {
+    set.done = true;
+    if (getSettings().timer) startTimer(currentWorkout.exercises[exIdx].rest);
+  }
+  saveWorkoutDraft();
   renderExercises();
+}
+function updateExerciseNote(exIdx, value) {
+  if (!currentWorkout || !currentWorkout.exercises[exIdx]) return;
+  currentWorkout.exercises[exIdx].note = value;
+  saveWorkoutDraft();
+}
+function updateWorkoutNote(value) {
+  if (!currentWorkout) return;
+  currentWorkout.note = value;
+  saveWorkoutDraft();
 }
 function toggleSet(exIdx, sIdx) {
   const set = currentWorkout.exercises[exIdx].sets[sIdx];
   set.done = !set.done;
   if (set.done && getSettings().timer) startTimer(currentWorkout.exercises[exIdx].rest);
+  saveWorkoutDraft();
   renderExercises();
 }
 function addSet(exIdx) {
-  currentWorkout.exercises[exIdx].sets.push({ weight: '', reps: '', rir: '', done: false });
+  const sets = currentWorkout.exercises[exIdx].sets;
+  const last = sets.slice().reverse().find(s => s.weight || s.reps);
+  sets.push({ weight: last ? last.weight : '', reps: last ? last.reps : '', rir: '', done: false });
+  saveWorkoutDraft();
   renderExercises();
 }
 function moveExercise(exIdx, dir) {
@@ -1228,6 +1621,7 @@ function moveExercise(exIdx, dir) {
   const newIdx = exIdx + dir;
   if (newIdx < 0 || newIdx >= ex.length) return;
   [ex[exIdx], ex[newIdx]] = [ex[newIdx], ex[exIdx]];
+  saveWorkoutDraft();
   renderExercises();
 }
 
@@ -1243,15 +1637,17 @@ function openSwap(exIdx) {
   const body = document.getElementById('modal-body');
   document.getElementById('modal-title').textContent = 'Замена упражнения';
   body.innerHTML = `
-    <div style="font-size: 13px; color: #888; margin-bottom: 10px;">Заменить "${ex.name}" на:</div>
-    ${[originalName, ...swaps].map(name =>
-      `<button class="modal-option" onclick="applySwap('${name.replace(/'/g, "\\'")}')">${name}${name === ex.name ? ' ← текущее' : ''}</button>`
-    ).join('')}
+    <div style="font-size: 13px; color: #888; margin-bottom: 10px;">Заменить "${escapeHTML(ex.name)}" на:</div>
+    ${[originalName, ...swaps].map(name => {
+      const encoded = encodeURIComponent(name).replace(/'/g, '%27');
+      return `<button class="modal-option" onclick="applySwap(decodeURIComponent('${encoded}'))">${escapeHTML(name)}${name === ex.name ? ' ← текущее' : ''}</button>`;
+    }).join('')}
   `;
   document.getElementById('modal').classList.add('active');
 }
 function applySwap(newName) {
   currentWorkout.exercises[activeSwapExIdx].name = newName;
+  saveWorkoutDraft();
   closeModal();
   renderExercises();
 }
@@ -1337,6 +1733,7 @@ document.getElementById('finish-btn').addEventListener('click', () => {
   const history = getHistory();
   history.push(currentWorkout);
   saveHistory(history);
+  clearWorkoutDraft();
   currentWorkout = null;
   currentDay = null;
   document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
@@ -1346,6 +1743,7 @@ document.getElementById('finish-btn').addEventListener('click', () => {
   document.getElementById('workout-note').value = '';
   document.getElementById('workout-note-container').style.display = 'none';
   document.getElementById('finish-btn').style.display = 'none';
+  renderDraftBanner();
   updateWeekDisplay();
   alert('Сохранено ✓');
 });
@@ -1365,10 +1763,11 @@ function renderHistory() {
     const verTag = w.programVersion ? `<span style="color:#666;font-size:11px;"> · v${w.programVersion}</span>` : '';
     const exercises = w.exercises.filter(ex => ex.sets.some(s => s.weight || s.reps)).map(ex => {
       const setsText = ex.sets.filter(s => s.weight || s.reps).map(s => `${s.weight || '?'}×${s.reps || '?'}${s.rir ? ` (R${s.rir})` : ''}`).join(' · ');
-      return `<div class="history-exercise"><div class="history-exercise-name">${ex.name}</div><div class="history-sets">${setsText}</div></div>`;
+      const exNote = ex.note ? `<div class="history-note">📝 ${escapeHTML(ex.note)}</div>` : '';
+      return `<div class="history-exercise"><div class="history-exercise-name">${escapeHTML(ex.name)}</div><div class="history-sets">${escapeHTML(setsText)}</div>${exNote}</div>`;
     }).join('');
     const note = w.note ? `<div class="history-note">📝 ${w.note}</div>` : '';
-    return `<div class="history-day"><div class="history-date">${dateStr}${weekTag}${verTag}</div><div class="history-workout">${w.dayName}</div>${exercises}${note}</div>`;
+    return `<div class="history-day"><div class="history-date">${dateStr}${weekTag}${verTag}</div><div class="history-workout">${escapeHTML(w.dayName)}</div>${exercises}${note ? `<div class="history-note">📝 ${escapeHTML(w.note)}</div>` : ''}</div>`;
   }).join('');
 }
 
@@ -1388,7 +1787,7 @@ function initProgress() {
     picker.innerHTML = '<option>Нет данных</option>';
     return;
   }
-  picker.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+  picker.innerHTML = names.map(n => `<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`).join('');
   renderProgress();
 }
 function renderProgress() {
@@ -1500,50 +1899,168 @@ function renderLineChart(data, color, goal) {
 
 // ===== MEASURE =====
 function saveMeasure() {
-  const m = {
-    date: new Date().toISOString(),
-    weight: parseFloat(document.getElementById('m-weight').value) || null,
-    waist: parseFloat(document.getElementById('m-waist').value) || null,
-    biceps: parseFloat(document.getElementById('m-biceps').value) || null,
-    thigh: parseFloat(document.getElementById('m-thigh').value) || null
-  };
-  if (!m.weight && !m.waist && !m.biceps && !m.thigh) { alert('Заполни хотя бы одно поле'); return; }
+  const m = { date: new Date().toISOString() };
+  MEASURE_FIELDS.forEach(f => { m[f.key] = numberFromInput('m-' + f.key); });
+  if (!MEASURE_FIELDS.some(f => m[f.key] != null)) { alert('Заполни хотя бы одно поле'); return; }
   const measures = getMeasures();
   measures.push(m);
   saveMeasures(measures);
-  ['m-weight','m-waist','m-biceps','m-thigh'].forEach(id => document.getElementById(id).value = '');
+  MEASURE_FIELDS.forEach(f => {
+    const el = document.getElementById('m-' + f.key);
+    if (el) el.value = '';
+  });
   renderMeasures();
   alert('Замер сохранён ✓');
 }
 function saveGoal() {
-  const g = {
-    weight: parseFloat(document.getElementById('g-weight').value) || null,
-    waist: parseFloat(document.getElementById('g-waist').value) || null,
-    biceps: parseFloat(document.getElementById('g-biceps').value) || null,
-    thigh: parseFloat(document.getElementById('g-thigh').value) || null
-  };
+  const current = getGoals();
+  const g = { _profile: current._profile || 'male' };
+  GOAL_FIELDS.forEach(f => { g[f.key] = numberFromInput('g-' + f.key); });
   saveGoals(g);
+  renderMeasures();
+}
+function getGoalProfile() {
+  const profile = getGoals()._profile;
+  return profile === 'female' ? 'female' : 'male';
+}
+function setGoalProfile(profile) {
+  const goals = getGoals();
+  goals._profile = profile === 'female' ? 'female' : 'male';
+  saveGoals(goals);
+  renderMeasures();
+}
+function getLatestMeasureWith(keys) {
+  const measures = getMeasures().slice().reverse();
+  return measures.find(m => keys.some(k => m[k] != null)) || null;
+}
+function getLatestMeasureValue(key) {
+  const latest = getLatestMeasureWith([key]);
+  return latest ? latest[key] : null;
+}
+function getIdealGoals() {
+  const profile = getGoalProfile();
+  const latest = getLatestMeasureWith(['wrist', 'height', 'waist', 'hips', 'shoulders']);
+  if (!latest) return {};
+
+  const ideal = {};
+  const wrist = normalizeNumber(latest.wrist);
+  const height = normalizeNumber(latest.height);
+  const hips = normalizeNumber(latest.hips);
+
+  if (profile === 'female') {
+    const waistFromHeight = height ? height * 0.43 : null;
+    const waistFromHips = hips ? hips * 0.72 : null;
+    if (waistFromHeight && waistFromHips) ideal.waist = round1((waistFromHeight + waistFromHips) / 2);
+    else if (waistFromHeight) ideal.waist = round1(waistFromHeight);
+    else if (waistFromHips) ideal.waist = round1(waistFromHips);
+
+    if (ideal.waist) {
+      ideal.hips = round1(hips || ideal.waist / 0.72);
+      ideal.shoulders = round1((hips || ideal.hips) * 0.95);
+      ideal.chest = round1(ideal.waist * 1.18);
+      ideal.thigh = round1((hips || ideal.hips) * 0.58);
+    }
+    if (wrist) {
+      ideal.neck = round1(wrist * 2.05);
+      ideal.biceps = round1(wrist * 1.85);
+      ideal.forearm = round1(wrist * 1.55);
+      ideal.calf = round1(wrist * 2.05);
+    } else if (height) {
+      ideal.neck = round1(height * 0.20);
+      ideal.biceps = round1(height * 0.17);
+      ideal.forearm = round1(height * 0.145);
+      ideal.calf = round1(height * 0.205);
+    }
+  } else {
+    if (wrist) {
+      const chest = wrist * 6.5;
+      ideal.chest = round1(chest);
+      ideal.waist = round1(chest * 0.70);
+      ideal.hips = round1(chest * 0.85);
+      ideal.biceps = round1(chest * 0.36);
+      ideal.forearm = round1(chest * 0.29);
+      ideal.thigh = round1(chest * 0.53);
+      ideal.neck = round1(chest * 0.37);
+      ideal.calf = round1(chest * 0.34);
+    } else if (height) {
+      ideal.waist = round1(height * 0.45);
+      ideal.chest = round1(ideal.waist / 0.70);
+      ideal.hips = round1(ideal.chest * 0.85);
+      ideal.biceps = round1(ideal.chest * 0.36);
+      ideal.forearm = round1(ideal.chest * 0.29);
+      ideal.thigh = round1(ideal.chest * 0.53);
+      ideal.neck = round1(ideal.chest * 0.37);
+      ideal.calf = round1(ideal.chest * 0.34);
+    }
+
+    const waistBase = ideal.waist || latest.waist;
+    if (waistBase) ideal.shoulders = round1(waistBase * 1.618);
+  }
+
+  const currentWeight = getLatestMeasureValue('weight');
+  if (currentWeight) ideal.weight = currentWeight;
+  return ideal;
+}
+function renderIdealGoals() {
+  const box = document.getElementById('ideal-goals');
+  if (!box) return;
+  const profile = getGoalProfile();
+  const ideal = getIdealGoals();
+  document.querySelectorAll('#goal-profile button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.profile === profile);
+  });
+  const note = document.getElementById('goal-formula-note');
+  if (note) {
+    note.textContent = profile === 'female'
+      ? 'Женский расчет: талия от роста и/или бедер, бедра через WHR около 0.72, плечи через баланс к бедрам. Это эстетический ориентир, не медицинская норма.'
+      : 'Мужской расчет: классические силовые пропорции от запястья, при отсутствии запястья - от роста и талии; плечи через соотношение к талии.';
+  }
+
+  GOAL_FIELDS.forEach(f => {
+    const input = document.getElementById('g-' + f.key);
+    if (input) input.placeholder = ideal[f.key] ? `~${ideal[f.key]}` : '';
+  });
+
+  const rows = GOAL_FIELDS
+    .filter(f => ideal[f.key] != null && f.key !== 'weight')
+    .map(f => `<div class="ideal-row"><span>${f.label}</span><b>${ideal[f.key]} ${f.unit}</b></div>`)
+    .join('');
+
+  const emptyText = profile === 'female'
+    ? 'Заполни рост и/или таз/ягодицы. Запястье улучшит расчет шеи, рук и икр.'
+    : 'Заполни запястье для классической формулы. Если запястья нет, расчет пойдет от роста и талии.';
+  box.innerHTML = rows || `<div class="ideal-empty">${emptyText}</div>`;
+}
+function applyIdealGoals() {
+  const ideal = getIdealGoals();
+  if (!Object.keys(ideal).length) {
+    alert('Добавь рост, запястье или таз/ягодицы, чтобы посчитать ориентиры.');
+    return;
+  }
+  const goals = getGoals();
+  GOAL_FIELDS.forEach(f => {
+    if ((goals[f.key] == null || goals[f.key] === '') && ideal[f.key] != null) {
+      goals[f.key] = ideal[f.key];
+    }
+  });
+  saveGoals(goals);
   renderMeasures();
 }
 function renderMeasures() {
   const goals = getGoals();
-  ['weight','waist','biceps','thigh'].forEach(k => {
-    const el = document.getElementById('g-' + k);
-    if (el && goals[k]) el.value = goals[k];
+  GOAL_FIELDS.forEach(f => {
+    const el = document.getElementById('g-' + f.key);
+    if (el) el.value = goals[f.key] || '';
   });
+  renderIdealGoals();
+
   const container = document.getElementById('measure-charts');
   const measures = getMeasures();
   if (measures.length < 2) {
     container.innerHTML = '<div class="empty-state">Нужно минимум 2 замера для графика.</div>';
     return;
   }
-  const fields = [
-    { key: 'weight', label: 'Вес', unit: 'кг', color: '#ff6b00' },
-    { key: 'waist', label: 'Талия', unit: 'см', color: '#4a9eff' },
-    { key: 'biceps', label: 'Бицепс', unit: 'см', color: '#5fcf6f' },
-    { key: 'thigh', label: 'Бедро', unit: 'см', color: '#c878ff' }
-  ];
-  container.innerHTML = fields.map(f => {
+  container.innerHTML = MEASURE_FIELDS.map(f => {
     const pts = measures.filter(m => m[f.key] != null).map(m => ({ x: new Date(m.date), y: m[f.key] }));
     if (pts.length < 2) return '';
     const first = pts[0].y, last = pts[pts.length-1].y;
@@ -1588,49 +2105,77 @@ function openProgramEditor() {
 function renderProgramEditor() {
   const program = getProgram();
   const body = document.getElementById('modal-body');
-  document.getElementById('modal-title').textContent = `Редактор программы v${program.version}`;
+  document.getElementById('modal-title').textContent = `Программа v${program.version}`;
   const dayKeys = Object.keys(program.days);
   const dayLabels = { upperA: "Upper A", upperB: "Upper B", lower: "Lower" };
   
   body.innerHTML = `
-    <div class="editor-day-tab">
-      ${dayKeys.map(k => `<button class="${k === editorDay ? 'active' : ''}" onclick="switchEditorDay('${k}')">${dayLabels[k] || k}</button>`).join('')}
+    <div class="program-editor">
+      <div class="program-editor-top">
+        <div class="editor-day-tab">
+          ${dayKeys.map(k => `<button class="${k === editorDay ? 'active' : ''}" onclick="switchEditorDay('${k}')">${dayLabels[k] || k}</button>`).join('')}
+        </div>
+        <div class="editor-field">
+          <label for="day-name-input">Название дня</label>
+          <input class="editor-input" type="text" id="day-name-input" value="${escapeHTML(program.days[editorDay].name)}" onchange="updateDayName(this.value)">
+        </div>
+      </div>
+      <div class="editor-section-title">
+        <span>Упражнения</span>
+        <span>${program.days[editorDay].exercises.length} шт.</span>
+      </div>
+      <div id="editor-exercises">
+        ${program.days[editorDay].exercises.map((ex, i) => renderEditorExercise(ex, i)).join('')}
+      </div>
+      <button class="btn-secondary" onclick="addEditorExercise()">+ Добавить упражнение</button>
+      <button class="btn-primary" onclick="closeProgramEditor()">Готово</button>
     </div>
-    <div style="margin-bottom: 10px;">
-      <input type="text" id="day-name-input" value="${program.days[editorDay].name}" 
-        style="background:#1f1f1f;border:1px solid #2a2a2a;color:#fff;padding:10px;border-radius:8px;font-size:13px;width:100%;-webkit-appearance:none;"
-        onchange="updateDayName(this.value)">
-    </div>
-    <div id="editor-exercises">
-      ${program.days[editorDay].exercises.map((ex, i) => renderEditorExercise(ex, i)).join('')}
-    </div>
-    <button class="btn-secondary" onclick="addEditorExercise()">+ Добавить упражнение</button>
-    <button class="btn-primary" onclick="closeProgramEditor()">Готово</button>
   `;
 }
 function renderEditorExercise(ex, idx) {
   return `
     <div class="editor-ex">
-      <div class="editor-ex-row">
-        <input type="text" placeholder="Название" value="${ex.name.replace(/"/g, '&quot;')}" onchange="updateEditorEx(${idx}, 'name', this.value)">
+      <div class="editor-ex-head">
+        <div class="editor-ex-num">#${idx + 1}</div>
+        <div class="editor-ex-actions">
+          <button onclick="moveEditorEx(${idx}, -1)" aria-label="Выше">↑</button>
+          <button onclick="moveEditorEx(${idx}, 1)" aria-label="Ниже">↓</button>
+          <button class="del" onclick="deleteEditorEx(${idx})" aria-label="Удалить">×</button>
+        </div>
       </div>
-      <div class="editor-ex-row">
-        <input type="text" class="target" placeholder="Цель (3×8-10, RIR 2)" value="${(ex.target || '').replace(/"/g, '&quot;')}" onchange="updateEditorEx(${idx}, 'target', this.value)">
+      <div class="editor-field">
+        <label>Название</label>
+        <input class="editor-input" type="text" placeholder="Жим штанги" value="${escapeHTML(ex.name)}" onchange="updateEditorEx(${idx}, 'name', this.value)">
       </div>
-      <div class="editor-ex-row" style="font-size:11px;color:#888;">
-        <span>Подх</span><input type="number" class="small" value="${ex.sets}" onchange="updateEditorEx(${idx}, 'sets', parseInt(this.value)||0)">
-        <span>Min</span><input type="number" class="small" value="${ex.reps_min || ''}" onchange="updateEditorEx(${idx}, 'reps_min', parseInt(this.value)||0)">
-        <span>Max</span><input type="number" class="small" value="${ex.reps_max || ''}" onchange="updateEditorEx(${idx}, 'reps_max', parseInt(this.value)||0)">
+      <div class="editor-field" style="margin-top:10px;">
+        <label>Цель подходов</label>
+        <input class="editor-input" type="text" placeholder="3×8-10, RIR 2" value="${escapeHTML(ex.target || '')}" onchange="updateEditorEx(${idx}, 'target', this.value)">
       </div>
-      <div class="editor-ex-row" style="font-size:11px;color:#888;">
-        <span>+кг</span><input type="number" step="0.5" class="small" value="${ex.increment || 0}" onchange="updateEditorEx(${idx}, 'increment', parseFloat(this.value)||0)">
-        <span>Отдых,с</span><input type="number" step="15" class="small" value="${ex.rest || 90}" onchange="updateEditorEx(${idx}, 'rest', parseInt(this.value)||90)">
+      <div class="editor-grid" style="margin-top:10px;">
+        <div class="editor-field">
+          <label>Подходы</label>
+          <input class="editor-input num" type="number" value="${ex.sets}" onchange="updateEditorEx(${idx}, 'sets', parseInt(this.value)||0)">
+        </div>
+        <div class="editor-field">
+          <label>Отдых, сек</label>
+          <input class="editor-input num" type="number" step="15" value="${ex.rest || 90}" onchange="updateEditorEx(${idx}, 'rest', parseInt(this.value)||90)">
+        </div>
+        <div class="editor-field">
+          <label>Повт. мин</label>
+          <input class="editor-input num" type="number" value="${ex.reps_min || ''}" onchange="updateEditorEx(${idx}, 'reps_min', parseInt(this.value)||0)">
+        </div>
+        <div class="editor-field">
+          <label>Повт. макс</label>
+          <input class="editor-input num" type="number" value="${ex.reps_max || ''}" onchange="updateEditorEx(${idx}, 'reps_max', parseInt(this.value)||0)">
+        </div>
+        <div class="editor-field">
+          <label>Шаг веса, кг</label>
+          <input class="editor-input num" type="number" step="0.5" value="${ex.increment || 0}" onchange="updateEditorEx(${idx}, 'increment', parseFloat(this.value)||0)">
+        </div>
       </div>
-      <input type="text" class="editor-swap" placeholder="Замены через запятую" value="${(ex.swaps || []).join(', ').replace(/"/g, '&quot;')}" onchange="updateEditorEx(${idx}, 'swaps', this.value.split(',').map(s=>s.trim()).filter(x=>x))">
-      <div class="editor-ex-actions">
-        <button onclick="moveEditorEx(${idx}, -1)">↑</button>
-        <button onclick="moveEditorEx(${idx}, 1)">↓</button>
-        <button class="del" onclick="deleteEditorEx(${idx})">🗑</button>
+      <div class="editor-field" style="margin-top:10px;">
+        <label>Замены</label>
+        <input class="editor-input" type="text" placeholder="Через запятую" value="${escapeHTML((ex.swaps || []).join(', '))}" onchange="updateEditorEx(${idx}, 'swaps', this.value.split(',').map(s=>s.trim()).filter(x=>x))">
       </div>
     </div>
   `;
@@ -1752,6 +2297,7 @@ function exportText() {
       if (sets.length === 0) return;
       lines.push(`  ${ex.name}`);
       sets.forEach((s, i) => lines.push(`    ${i+1}. ${s.weight || '?'} кг × ${s.reps || '?'}${s.rir ? ` (RIR ${s.rir})` : ''}`));
+      if (ex.note) lines.push(`    📝 ${ex.note}`);
     });
     if (w.note) lines.push(`  📝 ${w.note}`);
     lines.push('');
@@ -1762,10 +2308,9 @@ function exportText() {
     measures.forEach(m => {
       const d = new Date(m.date).toLocaleDateString('ru-RU');
       const parts = [];
-      if (m.weight) parts.push(`вес ${m.weight} кг`);
-      if (m.waist) parts.push(`талия ${m.waist}`);
-      if (m.biceps) parts.push(`бицепс ${m.biceps}`);
-      if (m.thigh) parts.push(`бедро ${m.thigh}`);
+      MEASURE_FIELDS.forEach(f => {
+        if (m[f.key] != null) parts.push(`${f.label.toLowerCase()} ${m[f.key]} ${f.unit}`);
+      });
       lines.push(`${d}: ${parts.join(', ')}`);
     });
   }
@@ -1780,7 +2325,15 @@ function resetAll() {
 
 // ===== INIT =====
 getProgram(); // ensure default saved
+initTapAnimations();
 renderDashboard();
+animateScreen(document.getElementById('screen-dashboard'));
+window.addEventListener('beforeunload', (event) => {
+  if (!hasWorkoutInput()) return;
+  saveWorkoutDraft();
+  event.preventDefault();
+  event.returnValue = '';
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
