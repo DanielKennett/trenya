@@ -188,6 +188,31 @@
   .deload-icon { flex-shrink: 0; width: 24px; height: 24px; border-radius: 8px;
                  background: var(--gold-soft); color: var(--gold); display: grid; place-items: center;
                  font-family: var(--num); font-weight: 700; font-size: 14px; }
+  .dash-calendar {
+    display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px;
+    margin-bottom: 14px;
+  }
+  .cal-day {
+    min-height: 78px; border-radius: 12px; padding: 8px 5px;
+    background: var(--surface); border: 1px solid var(--line-soft);
+    display: grid; grid-template-rows: auto auto 1fr; gap: 3px; align-items: start;
+  }
+  .cal-day.today { border-color: var(--ember-line); box-shadow: inset 0 0 0 1px var(--ember-line); }
+  .cal-day.done { background: var(--good-soft); border-color: oklch(0.78 0.14 145 / 0.35); }
+  .cal-weekday {
+    font-family: var(--num); font-size: 9px; color: var(--fg-4);
+    text-transform: uppercase; font-weight: 700; text-align: center; letter-spacing: 0;
+  }
+  .cal-num {
+    font-family: var(--num); font-size: 17px; font-weight: 800;
+    color: var(--fg); text-align: center; line-height: 1.1;
+  }
+  .cal-workout {
+    align-self: end; min-height: 22px; color: var(--fg-3);
+    font-size: 9px; font-weight: 700; line-height: 1.15;
+    text-align: center; word-break: normal; overflow-wrap: anywhere;
+  }
+  .cal-day.done .cal-workout { color: var(--good); }
 
   /* ============ WORKOUT ============ */
   .week-bar {
@@ -232,13 +257,14 @@
   .day-btn.active .d-sub { color: oklch(0.20 0.04 50); }
   .day-btn.suggested { padding-top: 24px; }
   .day-btn.suggested::after {
-    content: "сегодня"; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    content: attr(data-badge); position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
     background: var(--good); color: var(--bg);
     font-family: var(--num); font-size: 9px; font-weight: 700;
     line-height: 1; letter-spacing: 0.08em; text-transform: uppercase;
     padding: 4px 8px; border-radius: 999px; white-space: nowrap; z-index: 2;
     box-shadow: 0 2px 8px oklch(0 0 0 / 0.25);
   }
+  .day-btn.next-up::after { background: var(--ember); }
 
   /* ============ EXERCISE CARD ============ */
   .exercise {
@@ -309,7 +335,7 @@
 
   .sets { padding: 4px 0 2px; }
   .header-labels {
-    display: grid; grid-template-columns: 28px 1fr 1fr 56px 48px; gap: 8px;
+    display: grid; grid-template-columns: 28px minmax(0,1fr) minmax(0,1fr) 50px 44px 54px; gap: 6px;
     padding: 10px 14px 6px;
     font-family: var(--num); font-size: 10px;
     color: var(--fg-4); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
@@ -317,7 +343,7 @@
   .header-labels span { text-align: center; }
   .header-labels span:first-child { text-align: center; }
   .set-row {
-    display: grid; grid-template-columns: 28px 1fr 1fr 56px 48px; gap: 8px;
+    display: grid; grid-template-columns: 28px minmax(0,1fr) minmax(0,1fr) 50px 44px 54px; gap: 6px;
     padding: 4px 14px; align-items: center; position: relative;
   }
   .set-row::before {
@@ -353,6 +379,39 @@
   }
   .check-btn svg { width: 18px; height: 18px; }
   .check-btn.done { background: var(--good); border-color: var(--good); color: var(--bg); }
+  .drop-toggle {
+    appearance: none; border: 1px solid var(--line-soft);
+    background: var(--surface-2); color: var(--fg-3);
+    border-radius: 10px; height: 46px; cursor: pointer;
+    font-family: var(--num); font-size: 10px; font-weight: 800;
+    letter-spacing: 0; transition: background .12s, border-color .12s, color .12s, transform .12s;
+  }
+  .drop-toggle.active {
+    background: var(--ember-soft); border-color: var(--ember-line);
+    color: var(--ember);
+  }
+  .drop-toggle:active { transform: scale(.97); }
+  .drop-row {
+    display: grid; grid-template-columns: 48px minmax(0,1fr) minmax(0,1fr); gap: 8px;
+    margin: 2px 14px 8px 50px; padding: 8px;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    border-radius: 10px; align-items: center;
+  }
+  .drop-row-label {
+    font-family: var(--num); font-size: 10px; font-weight: 800;
+    color: var(--ember); text-align: center; letter-spacing: 0;
+  }
+  .drop-input {
+    background: var(--surface-2); border: 1px solid var(--line-soft);
+    color: var(--fg); padding: 10px 2px; border-radius: 9px;
+    font-family: var(--num); font-size: 15px; font-weight: 700;
+    text-align: center; width: 100%; -webkit-appearance: none; letter-spacing: 0;
+  }
+  .drop-input:focus {
+    outline: none; border-color: var(--ember);
+    background: oklch(0.215 0.025 55);
+  }
+  .drop-input::placeholder { color: var(--fg-4); font-weight: 600; }
 
   .add-set {
     width: calc(100% - 28px); margin: 8px 14px 12px;
@@ -450,7 +509,33 @@
   /* ============ HISTORY ============ */
   .history-day {
     background: var(--surface); border: 1px solid var(--line-soft);
-    border-radius: var(--r-md); padding: 16px; margin-bottom: 12px;
+    border-radius: var(--r-md); padding: 0; margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .history-day summary {
+    list-style: none; cursor: pointer; padding: 14px 16px;
+    display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+  }
+  .history-day summary::-webkit-details-marker { display: none; }
+  .history-summary-title {
+    font-size: 16px; font-weight: 700; color: var(--fg);
+    letter-spacing: -0.01em; margin-bottom: 3px;
+  }
+  .history-summary-sub {
+    font-family: var(--num); font-size: 11px; color: var(--fg-3);
+    letter-spacing: 0.02em; line-height: 1.35;
+  }
+  .history-chevron {
+    width: 28px; height: 28px; border-radius: 9px;
+    background: var(--surface-2); color: var(--fg-3);
+    display: grid; place-items: center; font-size: 18px; font-weight: 700;
+    transition: transform .16s, color .16s, background .16s;
+  }
+  .history-day[open] .history-chevron {
+    transform: rotate(90deg); color: var(--ember); background: var(--ember-soft);
+  }
+  .history-details {
+    padding: 0 16px 14px; border-top: 1px solid var(--line-soft);
   }
   .history-date {
     font-family: var(--num); font-size: 11px; color: var(--ember);
@@ -461,6 +546,7 @@
   .history-exercise {
     font-size: 13px; padding: 8px 0; border-top: 1px solid var(--line-soft); color: var(--fg-2);
   }
+  .history-details .history-exercise:first-child { border-top: 0; }
   .history-exercise-name { font-weight: 600; color: var(--fg); margin-bottom: 3px; letter-spacing: -0.005em; }
   .history-sets { color: var(--fg-3); font-family: var(--num); font-size: 12px; letter-spacing: 0.02em; }
   .history-note {
@@ -624,6 +710,11 @@
   }
   .editor-input:focus { outline: none; border-color: var(--ember); }
   .editor-input.num { text-align: center; font-family: var(--num); font-weight: 700; }
+  .editor-hint {
+    color: var(--fg-3); font-size: 12px; line-height: 1.45;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    border-radius: 10px; padding: 10px 12px;
+  }
   .editor-section-title {
     display: flex; justify-content: space-between; align-items: baseline;
     margin: 8px 0 2px;
@@ -873,8 +964,9 @@
     <div class="toggle on" id="toggle-suggest" onclick="toggleSetting('suggest')"></div>
   </div>
   <div class="info-box" style="border-left-color: #4a9eff;">
-    💡 Время отдыха для каждого упражнения настраивается в редакторе программы — там есть поле «Отдых, сек».
+    💡 Время отдыха меняется в редакторе программы у каждого упражнения в поле «Отдых, сек». Замены для кнопки «⇄ Замена» там же, в поле «Замены».
   </div>
+  <button class="btn-secondary" onclick="testTimerSignal()">Проверить звук и вибрацию</button>
   
   <h2>Программа</h2>
   <div class="info-box"><b>Программа v<span id="prog-version">1</span></b> — редактируй упражнения, подходы, повторы. История прошлых программ сохраняется.</div>
@@ -1038,7 +1130,7 @@ function clearWorkoutDraft() { localStorage.removeItem('workout_draft'); }
 function hasWorkoutInput(workout = currentWorkout) {
   if (!workout) return false;
   return !!(workout.note || workout.exercises.some(ex =>
-    ex.note || ex.sets.some(s => s.weight || s.reps || s.rir || s.done)
+    ex.note || ex.sets.some(setHasWorkoutData)
   ));
 }
 
@@ -1047,7 +1139,7 @@ function getLastExerciseData(exerciseName) {
   const history = getHistory();
   for (let i = history.length - 1; i >= 0; i--) {
     const ex = history[i].exercises.find(e => e.name === exerciseName);
-    if (ex && ex.sets.some(s => s.weight || s.reps)) return ex;
+    if (ex && ex.sets.some(setHasLiftData)) return ex;
   }
   return null;
 }
@@ -1067,6 +1159,67 @@ function fmtNum(value) {
   const n = normalizeNumber(value);
   if (n == null) return '';
   return Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
+}
+function getDateKey(dateValue) {
+  const d = new Date(dateValue);
+  if (isNaN(d)) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function getCalendarWeekStart(dateValue = new Date()) {
+  const d = new Date(dateValue);
+  d.setHours(0, 0, 0, 0);
+  const offset = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - offset);
+  return d;
+}
+function hasWorkoutOnDate(dateValue) {
+  const key = getDateKey(dateValue);
+  return getHistory().some(w => getDateKey(w.date) === key);
+}
+function shortWorkoutName(name) {
+  if (!name) return '';
+  return String(name).split(' — ')[0].trim();
+}
+function hasDropSet(set) {
+  const drop = set && set.drop;
+  return !!(drop && (drop.enabled || drop.weight || drop.reps));
+}
+function dropSetHasData(set) {
+  const drop = set && set.drop;
+  return !!(drop && (drop.weight || drop.reps));
+}
+function setHasWorkoutData(set) {
+  return !!(set && (set.weight || set.reps || set.rir || set.done || hasDropSet(set)));
+}
+function setHasLiftData(set) {
+  return !!(set && (set.weight || set.reps || dropSetHasData(set)));
+}
+function getSetVolume(set) {
+  if (!set) return 0;
+  const weight = normalizeNumber(set.weight);
+  const reps = parseInt(set.reps, 10);
+  let total = weight != null && Number.isFinite(reps) ? weight * reps : 0;
+  if (dropSetHasData(set)) {
+    const dropWeight = normalizeNumber(set.drop.weight);
+    const dropReps = parseInt(set.drop.reps, 10);
+    if (dropWeight != null && Number.isFinite(dropReps)) total += dropWeight * dropReps;
+  }
+  return total;
+}
+function formatSetForHistory(set) {
+  if (!set.weight && !set.reps && dropSetHasData(set)) return `дроп ${set.drop.weight || '?'}×${set.drop.reps || '?'}`;
+  const main = `${set.weight || '?'}×${set.reps || '?'}${set.rir ? ` (R${set.rir})` : ''}`;
+  if (!dropSetHasData(set)) return main;
+  return `${main} ↓ ${set.drop.weight || '?'}×${set.drop.reps || '?'}`;
+}
+function formatSetForExport(set) {
+  if (!set.weight && !set.reps && dropSetHasData(set)) return `дроп ${set.drop.weight || '?'} кг × ${set.drop.reps || '?'}`;
+  const main = `${set.weight || '?'} кг × ${set.reps || '?'}${set.rir ? ` (RIR ${set.rir})` : ''}`;
+  if (!dropSetHasData(set)) return main;
+  return `${main} + дроп ${set.drop.weight || '?'} кг × ${set.drop.reps || '?'}`;
 }
 function getCurrentWeek() {
   const start = new Date(getStartDate());
@@ -1136,37 +1289,87 @@ function isPR(exerciseName, weight, reps) {
 }
 
 // ===== WEIGHT SUGGESTION =====
+function parseRirValue(value) {
+  if (value === '' || value == null) return null;
+  const nums = String(value).replace(',', '.').match(/\d+(?:\.\d+)?/g);
+  if (!nums || nums.length === 0) return null;
+  const values = nums.slice(0, 2).map(Number).filter(Number.isFinite);
+  if (values.length === 0) return null;
+  return values.reduce((sum, n) => sum + n, 0) / values.length;
+}
+function getWorkingSetsFromLast(lastExercise, count) {
+  const valid = lastExercise && lastExercise.sets ? lastExercise.sets.filter(s => s.weight && s.reps) : [];
+  if (valid.length <= count) return valid;
+  return valid.slice(valid.length - count);
+}
+function shiftWeightPlan(sets, delta) {
+  return sets.map(s => {
+    const w = normalizeNumber(s.weight);
+    return w == null ? null : Math.max(0, w + delta);
+  });
+}
+function formatWeightPlan(weights) {
+  const clean = weights.filter(w => w != null).map(fmtNum);
+  if (clean.length === 0) return '';
+  return clean.every(w => w === clean[0]) ? clean[0] : clean.join(' / ');
+}
 function suggestNextWeight(exerciseName) {
   const last = getLastExerciseData(exerciseName);
   if (!last) return null;
   const exDef = getProgramExerciseDef(exerciseName);
   if (!exDef) return null;
-  const validSets = last.sets.filter(s => s.weight && s.reps);
-  if (validSets.length < exDef.sets) return null;
+  const setCount = parseInt(exDef.sets, 10) || 1;
+  const repsMin = parseInt(exDef.reps_min, 10) || 1;
+  const repsMax = parseInt(exDef.reps_max, 10) || repsMin;
+  const increment = normalizeNumber(exDef.increment) || 0;
+  const validSets = getWorkingSetsFromLast(last, setCount);
+  if (validSets.length < setCount) return null;
   let topWeight = 0;
   let hardMisses = 0;
-  let easyHits = 0;
-  let totalRir = 0;
-  let rirCount = 0;
+  let topRepHits = 0;
   for (const s of validSets) {
-    const r = parseInt(s.reps);
-    const rir = s.rir !== '' && s.rir != null ? parseInt(s.rir) : null;
-    const w = parseFloat(s.weight);
+    const r = parseInt(s.reps, 10);
+    const rir = parseRirValue(s.rir);
+    const w = normalizeNumber(s.weight) || 0;
     if (w > topWeight) topWeight = w;
-    if (r < exDef.reps_min || (rir != null && rir <= 0 && r < exDef.reps_max)) hardMisses++;
-    if (r >= exDef.reps_max && (rir == null || rir <= 2)) easyHits++;
-    if (rir != null) { totalRir += rir; rirCount++; }
+    if (r < repsMin || (rir != null && rir <= 0 && r < repsMax)) hardMisses++;
+    if (r >= repsMax) topRepHits++;
   }
-  if (!topWeight || !exDef.increment) return null;
-  const avgRir = rirCount ? totalRir / rirCount : null;
-  if (easyHits === validSets.length && (avgRir == null || avgRir <= 1.5)) {
-    return { action: 'up', from: topWeight, to: topWeight + exDef.increment, increment: exDef.increment, text: `В прошлый раз всё выбил — попробуй ${fmtNum(topWeight + exDef.increment)} кг` };
+  if (!topWeight || !increment) return null;
+  if (topRepHits === validSets.length) {
+    const weights = shiftWeightPlan(validSets, increment);
+    return {
+      action: 'up',
+      from: topWeight,
+      to: weights[weights.length - 1],
+      increment,
+      weights,
+      sourceSets: validSets,
+      text: `Все рабочие подходы дошли до ${repsMax} — попробуй ${formatWeightPlan(weights)} кг`
+    };
   }
   if (hardMisses >= Math.ceil(validSets.length / 2)) {
-    const to = Math.max(0, topWeight - exDef.increment);
-    return { action: 'down', from: topWeight, to, increment: exDef.increment, text: `Было тяжело — можно снизить до ${fmtNum(to)} кг` };
+    const weights = shiftWeightPlan(validSets, -increment);
+    return {
+      action: 'down',
+      from: topWeight,
+      to: weights[weights.length - 1],
+      increment,
+      weights,
+      sourceSets: validSets,
+      text: `Просадка по повторам — попробуй ${formatWeightPlan(weights)} кг`
+    };
   }
-  return { action: 'hold', from: topWeight, to: topWeight, increment: 0, text: `Оставь ${fmtNum(topWeight)} кг и добери повторения` };
+  const weights = shiftWeightPlan(validSets, 0);
+  return {
+    action: 'hold',
+    from: topWeight,
+    to: weights[weights.length - 1],
+    increment: 0,
+    weights,
+    sourceSets: validSets,
+    text: `Оставь прошлую схему ${formatWeightPlan(weights)} кг и добери ${repsMin}-${repsMax}`
+  };
 }
 
 // ===== MOTION =====
@@ -1263,6 +1466,29 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 });
 
 // ===== DASHBOARD =====
+function renderDashboardCalendar(today = new Date()) {
+  const start = getCalendarWeekStart(today);
+  const todayKey = getDateKey(today);
+  const history = getHistory();
+  const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const days = Array.from({ length: 7 }, (_, idx) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + idx);
+    const key = getDateKey(date);
+    const workouts = history.filter(w => getDateKey(w.date) === key);
+    const names = workouts.map(w => shortWorkoutName(w.dayName)).filter(Boolean);
+    const label = names.length > 1 ? `${names[0]} +${names.length - 1}` : (names[0] || '');
+    const classes = ['cal-day'];
+    if (key === todayKey) classes.push('today');
+    if (workouts.length) classes.push('done');
+    return `<div class="${classes.join(' ')}">
+      <div class="cal-weekday">${weekdays[idx]}</div>
+      <div class="cal-num">${date.getDate()}</div>
+      <div class="cal-workout">${label ? escapeHTML(label) : ''}</div>
+    </div>`;
+  }).join('');
+  return `<h2>Календарь</h2><div class="dash-calendar">${days}</div>`;
+}
 function renderDashboard() {
   const week = getCurrentWeek();
   const totalWorkouts = getHistory().length;
@@ -1279,7 +1505,11 @@ function renderDashboard() {
   const lastWorkout = getHistory()[getHistory().length - 1];
   let daysSince = '—';
   if (lastWorkout) {
-    const d = Math.floor((today - new Date(lastWorkout.date)) / 86400000);
+    const lastDay = new Date(lastWorkout.date);
+    lastDay.setHours(0, 0, 0, 0);
+    const todayDay = new Date(today);
+    todayDay.setHours(0, 0, 0, 0);
+    const d = Math.floor((todayDay - lastDay) / 86400000);
     daysSince = d === 0 ? 'сегодня' : d === 1 ? 'вчера' : `${d} д.`;
   }
 
@@ -1334,6 +1564,8 @@ function renderDashboard() {
       </div>
     </div>`;
   }
+
+  html += renderDashboardCalendar(today);
 
   // Stat grid
   html += `<h2>Сводка</h2>
@@ -1394,11 +1626,19 @@ function updateWeekDisplay() {
   if (wi) wi.value = w;
   const sd = document.getElementById('start-date');
   if (sd) sd.value = getStartDate();
-  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('suggested'));
+  document.querySelectorAll('.day-btn').forEach(b => {
+    b.classList.remove('suggested', 'next-up');
+    b.removeAttribute('data-badge');
+  });
   const sug = getSuggestedDay();
   if (sug) {
     const btn = document.querySelector(`.day-btn[data-day="${sug}"]`);
-    if (btn) btn.classList.add('suggested');
+    if (btn) {
+      const trainedToday = hasWorkoutOnDate(new Date());
+      btn.classList.add('suggested');
+      if (trainedToday) btn.classList.add('next-up');
+      btn.dataset.badge = trainedToday ? 'дальше' : 'сегодня';
+    }
   }
   if (currentDay) {
     const active = document.querySelector(`.day-btn[data-day="${currentDay}"]`);
@@ -1472,19 +1712,21 @@ function startWorkout(dayKey) {
 function createWorkoutExercise(ex) {
   const last = getLastExerciseData(ex.name);
   const suggestion = getSettings().suggest ? suggestNextWeight(ex.name) : null;
-  const targetWeight = suggestion ? suggestion.to : null;
+  const sourceSets = suggestion && suggestion.sourceSets ? suggestion.sourceSets : getWorkingSetsFromLast(last, ex.sets);
   return {
     name: ex.name,
     target: ex.target,
     rest: ex.rest,
     note: '',
     sets: Array(ex.sets).fill(null).map((_, idx) => {
-      const lastSet = last && last.sets[idx];
+      const lastSet = sourceSets[idx] || (last && last.sets[idx]);
+      const suggestedWeight = suggestion && suggestion.weights ? suggestion.weights[idx] : null;
       return {
-        weight: targetWeight != null ? fmtNum(targetWeight) : (lastSet && lastSet.weight ? lastSet.weight : ''),
+        weight: suggestedWeight != null ? fmtNum(suggestedWeight) : (lastSet && lastSet.weight ? lastSet.weight : ''),
         reps: lastSet && lastSet.reps ? lastSet.reps : '',
         rir: '',
-        done: false
+        done: false,
+        drop: { enabled: false, weight: '', reps: '' }
       };
     })
   };
@@ -1518,8 +1760,8 @@ function renderExercises() {
         <button class="icon-btn" onclick="moveExercise(${exIdx}, 1)" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''} aria-label="Вниз">↓</button>
         <button class="icon-btn" onclick="openSwap(${exIdx})">⇄ Замена</button>
       </div>
-      ${suggestion ? `<div class="suggest-tip ${suggestion.action}" onclick="applySuggestion(${exIdx}, ${suggestion.to})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.5 1 2.3v1h6v-1c0-.8.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>${escapeHTML(suggestion.text)}</div>` : ''}
-      <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span></div>
+      ${suggestion ? `<div class="suggest-tip ${suggestion.action}" onclick="applySuggestion(${exIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.5 1 2.3v1h6v-1c0-.8.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>${escapeHTML(suggestion.text)}</div>` : ''}
+      <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span><span>drop</span></div>
       <div class="sets">${ex.sets.map((s, sIdx) => renderSetRow(exIdx, sIdx, s, last)).join('')}</div>
       ${last ? renderCompareRow(ex, last) : ''}
       <div class="exercise-note-section">
@@ -1535,10 +1777,10 @@ function renderExercises() {
 function renderCompareRow(currentEx, lastEx) {
   const currValid = currentEx.sets.filter(s => s.weight && s.reps);
   if (currValid.length === 0) return '';
-  const currTon = currValid.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0), 0);
+  const currTon = currentEx.sets.reduce((sum, s) => sum + getSetVolume(s), 0);
   const lastValid = lastEx.sets.filter(s => s.weight && s.reps);
   if (lastValid.length === 0) return '';
-  const lastTon = lastValid.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0), 0);
+  const lastTon = lastEx.sets.reduce((sum, s) => sum + getSetVolume(s), 0);
   const delta = currTon - lastTon;
   const cls = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
   const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '=';
@@ -1566,31 +1808,108 @@ function renderSetRow(exIdx, sIdx, set, lastEx) {
   const lastSet = lastEx && lastEx.sets[sIdx];
   const wPh = lastSet ? escapeHTML(lastSet.weight) : '';
   const rPh = lastSet ? escapeHTML(lastSet.reps) : '';
+  const drop = set.drop || { enabled: false, weight: '', reps: '' };
+  const dropActive = hasDropSet(set);
+  const dropWPh = lastSet && lastSet.drop ? escapeHTML(lastSet.drop.weight) : '';
+  const dropRPh = lastSet && lastSet.drop ? escapeHTML(lastSet.drop.reps) : '';
+  const dropRow = dropActive ? `
+    <div class="drop-row" data-ex-idx="${exIdx}" data-set-idx="${sIdx}">
+      <div class="drop-row-label">DROP</div>
+      <input type="number" inputmode="decimal" class="drop-input" placeholder="${dropWPh || 'кг'}" value="${escapeHTML(drop.weight)}" onchange="updateDropSet(${exIdx}, ${sIdx}, 'weight', this.value)" aria-label="Вес дропсета">
+      <input type="number" inputmode="numeric" class="drop-input" placeholder="${dropRPh || 'повт'}" value="${escapeHTML(drop.reps)}" onchange="updateDropSet(${exIdx}, ${sIdx}, 'reps', this.value)" aria-label="Повторы дропсета">
+    </div>
+  ` : '';
   return `
-    <div class="set-row ${set.done ? 'done' : ''}">
+    <div class="set-row ${set.done ? 'done' : ''}" data-ex-idx="${exIdx}" data-set-idx="${sIdx}">
       <div class="set-num">${sIdx + 1}</div>
       <input type="number" inputmode="decimal" class="set-input ${set.done ? 'done' : ''}" placeholder="${wPh}" value="${escapeHTML(set.weight)}" onchange="updateSet(${exIdx}, ${sIdx}, 'weight', this.value)">
       <input type="number" inputmode="numeric" class="set-input ${set.done ? 'done' : ''}" placeholder="${rPh}" value="${escapeHTML(set.reps)}" onchange="updateSet(${exIdx}, ${sIdx}, 'reps', this.value)">
       <input type="number" inputmode="numeric" class="rir-input" placeholder="–" value="${escapeHTML(set.rir)}" min="0" max="5" onchange="updateSet(${exIdx}, ${sIdx}, 'rir', this.value)">
       <button class="check-btn ${set.done ? 'done' : ''}" onclick="toggleSet(${exIdx}, ${sIdx})" aria-label="Отметить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg></button>
+      <button class="drop-toggle ${dropActive ? 'active' : ''}" onclick="toggleDropSet(${exIdx}, ${sIdx})" aria-label="Дропсет подхода ${sIdx + 1}" title="Дропсет">DROP</button>
     </div>
+    ${dropRow}
   `;
 }
 
-function applySuggestion(exIdx, weight) {
-  currentWorkout.exercises[exIdx].sets.forEach(s => { if (!s.weight) s.weight = fmtNum(weight); });
+function applySuggestion(exIdx) {
+  const ex = currentWorkout.exercises[exIdx];
+  const suggestion = suggestNextWeight(ex.name);
+  if (!suggestion || !suggestion.weights) return;
+  ex.sets.forEach((set, idx) => {
+    const weight = suggestion.weights[idx];
+    const sourceSet = suggestion.sourceSets && suggestion.sourceSets[idx];
+    if (weight != null) set.weight = fmtNum(weight);
+    if (sourceSet && sourceSet.reps) set.reps = sourceSet.reps;
+  });
   saveWorkoutDraft();
   renderExercises();
 }
 function updateSet(exIdx, sIdx, field, value) {
   const set = currentWorkout.exercises[exIdx].sets[sIdx];
   set[field] = value;
+  let autoDone = false;
   if ((field === 'weight' || field === 'reps') && set.weight && set.reps && !set.done) {
     set.done = true;
+    autoDone = true;
     if (getSettings().timer) startTimer(currentWorkout.exercises[exIdx].rest);
   }
   saveWorkoutDraft();
+  updateSetRowState(exIdx, sIdx);
+  if (autoDone) updateExerciseCompare(exIdx);
+}
+function updateSetRowState(exIdx, sIdx) {
+  const row = document.querySelector(`.set-row[data-ex-idx="${exIdx}"][data-set-idx="${sIdx}"]`);
+  const set = currentWorkout && currentWorkout.exercises[exIdx] && currentWorkout.exercises[exIdx].sets[sIdx];
+  if (!row || !set) return;
+  row.classList.toggle('done', !!set.done);
+  row.querySelectorAll('.set-input').forEach(input => input.classList.toggle('done', !!set.done));
+  const btn = row.querySelector('.check-btn');
+  if (btn) btn.classList.toggle('done', !!set.done);
+  const dropBtn = row.querySelector('.drop-toggle');
+  if (dropBtn) dropBtn.classList.toggle('active', hasDropSet(set));
+}
+function ensureDropSet(set) {
+  if (!set.drop) set.drop = { enabled: false, weight: '', reps: '' };
+  return set.drop;
+}
+function toggleDropSet(exIdx, sIdx) {
+  const set = currentWorkout.exercises[exIdx].sets[sIdx];
+  const drop = ensureDropSet(set);
+  const active = hasDropSet(set);
+  drop.enabled = !active;
+  if (!drop.enabled) {
+    drop.weight = '';
+    drop.reps = '';
+  }
+  saveWorkoutDraft();
   renderExercises();
+}
+function updateDropSet(exIdx, sIdx, field, value) {
+  const set = currentWorkout.exercises[exIdx].sets[sIdx];
+  const drop = ensureDropSet(set);
+  drop.enabled = true;
+  drop[field] = value;
+  saveWorkoutDraft();
+  updateExerciseCompare(exIdx);
+}
+function updateExerciseCompare(exIdx) {
+  const cards = document.querySelectorAll('#exercises-list .exercise');
+  const card = cards[exIdx];
+  if (!card || !currentWorkout || !currentWorkout.exercises[exIdx]) return;
+  const ex = currentWorkout.exercises[exIdx];
+  const last = getLastExerciseData(ex.name);
+  let compare = card.querySelector('.compare-row');
+  const html = last ? renderCompareRow(ex, last) : '';
+  if (!html) {
+    if (compare) compare.remove();
+    return;
+  }
+  if (compare) compare.outerHTML = html;
+  else {
+    const note = card.querySelector('.exercise-note-section');
+    if (note) note.insertAdjacentHTML('beforebegin', html);
+  }
 }
 function updateExerciseNote(exIdx, value) {
   if (!currentWorkout || !currentWorkout.exercises[exIdx]) return;
@@ -1607,12 +1926,13 @@ function toggleSet(exIdx, sIdx) {
   set.done = !set.done;
   if (set.done && getSettings().timer) startTimer(currentWorkout.exercises[exIdx].rest);
   saveWorkoutDraft();
-  renderExercises();
+  updateSetRowState(exIdx, sIdx);
+  updateExerciseCompare(exIdx);
 }
 function addSet(exIdx) {
   const sets = currentWorkout.exercises[exIdx].sets;
   const last = sets.slice().reverse().find(s => s.weight || s.reps);
-  sets.push({ weight: last ? last.weight : '', reps: last ? last.reps : '', rir: '', done: false });
+  sets.push({ weight: last ? last.weight : '', reps: last ? last.reps : '', rir: '', done: false, drop: { enabled: false, weight: '', reps: '' } });
   saveWorkoutDraft();
   renderExercises();
 }
@@ -1658,6 +1978,7 @@ let audioCtx = null;
 function playBeep() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
@@ -1680,6 +2001,19 @@ function playBeep() {
     osc2.start(audioCtx.currentTime + 0.5);
     osc2.stop(audioCtx.currentTime + 0.9);
   } catch (e) {}
+}
+function testTimerSignal() {
+  const settings = getSettings();
+  settings.sound = true;
+  settings.vibrate = true;
+  saveSettings(settings);
+  initSettings();
+  playBeep();
+  const canVibrate = !!navigator.vibrate;
+  if (canVibrate) navigator.vibrate([200, 100, 300]);
+  alert(canVibrate
+    ? 'Проверка: звук включен, вибрация отправлена.'
+    : 'Звук включен. Вибрация недоступна в этом браузере/на этом устройстве.');
 }
 function startTimer(s) {
   stopTimer();
@@ -1726,7 +2060,7 @@ function updateTimerDisplay() {
 // ===== FINISH =====
 document.getElementById('finish-btn').addEventListener('click', () => {
   if (!currentWorkout) return;
-  const hasData = currentWorkout.exercises.some(ex => ex.sets.some(s => s.weight || s.reps));
+  const hasData = currentWorkout.exercises.some(ex => ex.sets.some(setHasLiftData));
   if (!hasData) { alert('Заполни хотя бы один подход'); return; }
   if (!confirm('Завершить и сохранить?')) return;
   currentWorkout.note = document.getElementById('workout-note').value || '';
@@ -1761,13 +2095,23 @@ function renderHistory() {
     const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
     const weekTag = w.week ? `<span style="color:#888;"> · Нед. ${w.week}</span>` : '';
     const verTag = w.programVersion ? `<span style="color:#666;font-size:11px;"> · v${w.programVersion}</span>` : '';
-    const exercises = w.exercises.filter(ex => ex.sets.some(s => s.weight || s.reps)).map(ex => {
-      const setsText = ex.sets.filter(s => s.weight || s.reps).map(s => `${s.weight || '?'}×${s.reps || '?'}${s.rir ? ` (R${s.rir})` : ''}`).join(' · ');
+    const filledExercises = w.exercises.filter(ex => ex.sets.some(setHasLiftData));
+    const exercises = filledExercises.map(ex => {
+      const setsText = ex.sets.filter(setHasLiftData).map(formatSetForHistory).join(' · ');
       const exNote = ex.note ? `<div class="history-note">📝 ${escapeHTML(ex.note)}</div>` : '';
       return `<div class="history-exercise"><div class="history-exercise-name">${escapeHTML(ex.name)}</div><div class="history-sets">${escapeHTML(setsText)}</div>${exNote}</div>`;
     }).join('');
-    const note = w.note ? `<div class="history-note">📝 ${w.note}</div>` : '';
-    return `<div class="history-day"><div class="history-date">${dateStr}${weekTag}${verTag}</div><div class="history-workout">${escapeHTML(w.dayName)}</div>${exercises}${note ? `<div class="history-note">📝 ${escapeHTML(w.note)}</div>` : ''}</div>`;
+    const title = shortWorkoutName(w.dayName);
+    return `<details class="history-day">
+      <summary>
+        <div>
+          <div class="history-summary-title">${escapeHTML(title)}</div>
+          <div class="history-summary-sub">${dateStr}${weekTag}${verTag} · ${filledExercises.length} упр.</div>
+        </div>
+        <div class="history-chevron">›</div>
+      </summary>
+      <div class="history-details">${exercises}${w.note ? `<div class="history-note">📝 ${escapeHTML(w.note)}</div>` : ''}</div>
+    </details>`;
   }).join('');
 }
 
@@ -1775,7 +2119,7 @@ function renderHistory() {
 function getAllExerciseNames() {
   const names = new Set();
   getHistory().forEach(w => w.exercises.forEach(ex => {
-    if (ex.sets.some(s => s.weight || s.reps)) names.add(ex.name);
+    if (ex.sets.some(setHasLiftData)) names.add(ex.name);
   }));
   return Array.from(names);
 }
@@ -1802,7 +2146,7 @@ function renderProgress() {
     const weights = valid.map(s => parseFloat(s.weight)).filter(x => !isNaN(x));
     if (weights.length === 0) return;
     const topWeight = Math.max(...weights);
-    const tonnage = valid.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0), 0);
+    const tonnage = ex.sets.reduce((sum, s) => sum + getSetVolume(s), 0);
     const topSet = valid.reduce((best, s) => {
       const wv = parseFloat(s.weight), r = parseInt(s.reps);
       if (isNaN(wv) || isNaN(r) || r >= 37) return best;
@@ -2119,6 +2463,7 @@ function renderProgramEditor() {
           <label for="day-name-input">Название дня</label>
           <input class="editor-input" type="text" id="day-name-input" value="${escapeHTML(program.days[editorDay].name)}" onchange="updateDayName(this.value)">
         </div>
+        <div class="editor-hint" style="margin-top:10px;">Таймер берёт длительность из поля «Отдых, сек». Кнопка «⇄ Замена» в тренировке показывает варианты из поля «Замены».</div>
       </div>
       <div class="editor-section-title">
         <span>Упражнения</span>
@@ -2157,7 +2502,7 @@ function renderEditorExercise(ex, idx) {
           <input class="editor-input num" type="number" value="${ex.sets}" onchange="updateEditorEx(${idx}, 'sets', parseInt(this.value)||0)">
         </div>
         <div class="editor-field">
-          <label>Отдых, сек</label>
+          <label>Отдых после подхода, сек</label>
           <input class="editor-input num" type="number" step="15" value="${ex.rest || 90}" onchange="updateEditorEx(${idx}, 'rest', parseInt(this.value)||90)">
         </div>
         <div class="editor-field">
@@ -2174,7 +2519,7 @@ function renderEditorExercise(ex, idx) {
         </div>
       </div>
       <div class="editor-field" style="margin-top:10px;">
-        <label>Замены</label>
+        <label>Замены для кнопки «⇄ Замена»</label>
         <input class="editor-input" type="text" placeholder="Через запятую" value="${escapeHTML((ex.swaps || []).join(', '))}" onchange="updateEditorEx(${idx}, 'swaps', this.value.split(',').map(s=>s.trim()).filter(x=>x))">
       </div>
     </div>
@@ -2293,10 +2638,10 @@ function exportText() {
     const d = new Date(w.date).toLocaleDateString('ru-RU');
     lines.push(`📅 ${d} · Неделя ${w.week || '?'} · ${w.dayName}`);
     w.exercises.forEach(ex => {
-      const sets = ex.sets.filter(s => s.weight || s.reps);
+      const sets = ex.sets.filter(setHasLiftData);
       if (sets.length === 0) return;
       lines.push(`  ${ex.name}`);
-      sets.forEach((s, i) => lines.push(`    ${i+1}. ${s.weight || '?'} кг × ${s.reps || '?'}${s.rir ? ` (RIR ${s.rir})` : ''}`));
+      sets.forEach((s, i) => lines.push(`    ${i+1}. ${formatSetForExport(s)}`));
       if (ex.note) lines.push(`    📝 ${ex.note}`);
     });
     if (w.note) lines.push(`  📝 ${w.note}`);
