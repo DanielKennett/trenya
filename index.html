@@ -188,17 +188,35 @@
   .deload-icon { flex-shrink: 0; width: 24px; height: 24px; border-radius: 8px;
                  background: var(--gold-soft); color: var(--gold); display: grid; place-items: center;
                  font-family: var(--num); font-weight: 700; font-size: 14px; }
+  .dash-calendar-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; margin: 28px 0 12px;
+  }
+  .dash-calendar-head h2 { margin: 0; }
+  .dash-calendar-range {
+    font-family: var(--num); font-size: 10px; color: var(--fg-4);
+    text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .dash-calendar-scroll {
+    overflow-x: auto; margin: 0 calc(var(--pad) * -1) 14px;
+    padding: 0 var(--pad) 6px; scrollbar-width: none;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+  }
+  .dash-calendar-scroll::-webkit-scrollbar { display: none; }
   .dash-calendar {
-    display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px;
-    margin-bottom: 14px;
+    display: flex; gap: 6px; width: max-content;
   }
   .cal-day {
-    min-height: 78px; border-radius: 12px; padding: 8px 5px;
+    width: 58px; min-height: 78px; border-radius: 12px; padding: 8px 5px;
     background: var(--surface); border: 1px solid var(--line-soft);
-    display: grid; grid-template-rows: auto auto 1fr; gap: 3px; align-items: start;
+    display: grid; grid-template-rows: auto auto 10px 1fr; gap: 3px; align-items: start;
+    scroll-snap-align: start;
   }
   .cal-day.today { border-color: var(--ember-line); box-shadow: inset 0 0 0 1px var(--ember-line); }
   .cal-day.done { background: var(--good-soft); border-color: oklch(0.78 0.14 145 / 0.35); }
+  .cal-day.planned { border-color: var(--ember-line); }
+  .cal-day.muted { opacity: .45; }
   .cal-weekday {
     font-family: var(--num); font-size: 9px; color: var(--fg-4);
     text-transform: uppercase; font-weight: 700; text-align: center; letter-spacing: 0;
@@ -207,12 +225,18 @@
     font-family: var(--num); font-size: 17px; font-weight: 800;
     color: var(--fg); text-align: center; line-height: 1.1;
   }
+  .cal-today-label {
+    font-family: var(--num); font-size: 8px; font-weight: 800;
+    color: var(--ember); text-transform: uppercase; text-align: center;
+    line-height: 1; letter-spacing: 0;
+  }
   .cal-workout {
     align-self: end; min-height: 22px; color: var(--fg-3);
     font-size: 9px; font-weight: 700; line-height: 1.15;
     text-align: center; word-break: normal; overflow-wrap: anywhere;
   }
   .cal-day.done .cal-workout { color: var(--good); }
+  .cal-day.planned .cal-workout { color: var(--ember); }
 
   /* ============ WORKOUT ============ */
   .week-bar {
@@ -305,19 +329,6 @@
     padding: 2px 7px; border-radius: 6px; margin-left: 8px;
     letter-spacing: 0.05em;
   }
-  .suggest-tip {
-    background: var(--good-soft); color: var(--good);
-    font-size: 12px; padding: 10px 16px;
-    border-top: 1px solid oklch(0.78 0.14 145 / 0.2);
-    display: flex; align-items: center; gap: 8px; cursor: pointer;
-    font-family: var(--sans);
-  }
-  .suggest-tip.hold { background: var(--gold-soft); color: var(--gold); border-top-color: oklch(0.85 0.13 95 / 0.25); }
-  .suggest-tip.down { background: var(--bad-soft); color: var(--bad); border-top-color: oklch(0.68 0.18 25 / 0.25); }
-  .suggest-tip b { font-family: var(--num); font-weight: 700; }
-  .suggest-tip:active { background: oklch(0.78 0.14 145 / 0.22); }
-  .suggest-tip svg { width: 14px; height: 14px; flex-shrink: 0; }
-
   .draft-banner {
     background: var(--info-soft); border: 1px solid oklch(0.78 0.10 240 / 0.32);
     color: var(--info); border-radius: var(--r-md);
@@ -444,6 +455,24 @@
     font-family: var(--num);
   }
   .timer-bar.active { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+  .timer-bar.done-pulse {
+    animation: timerPulse .75s ease-in-out 4;
+    box-shadow: 0 0 0 1px oklch(0.78 0.14 145 / 0.7), 0 0 36px oklch(0.78 0.14 145 / 0.55);
+  }
+  body.timer-flash::before {
+    content: ""; position: fixed; inset: 0; z-index: 70;
+    background: oklch(0.78 0.14 145 / 0.12); pointer-events: none;
+    animation: screenFlash .9s ease-out 2;
+  }
+  @keyframes timerPulse {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    50% { transform: translate(-50%, 0) scale(1.04); }
+  }
+  @keyframes screenFlash {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    100% { opacity: 0; }
+  }
   .timer-bar #timer-display {
     font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
@@ -470,6 +499,11 @@
   }
   .btn-secondary:active { background: var(--surface-2); }
   .file-input { display: none; }
+  .support-note {
+    margin-top: 10px; color: var(--fg-3); font-size: 12px; line-height: 1.45;
+    padding: 10px 12px; background: var(--bg-soft);
+    border: 1px solid var(--line-soft); border-radius: 10px;
+  }
 
   /* ============ WORKOUT NOTE ============ */
   .workout-note-section {
@@ -487,6 +521,42 @@
   }
   .workout-note-section textarea:focus { outline: none; border-color: var(--ember); }
   .workout-note-section textarea::placeholder { color: var(--fg-4); }
+  .history-edit-banner {
+    display: none; margin-bottom: 14px; padding: 12px;
+    background: var(--ember-soft); border: 1px solid var(--ember-line);
+    border-radius: var(--r-md); color: var(--fg);
+  }
+  .history-edit-banner.active { display: grid; gap: 10px; }
+  .history-edit-banner-title { font-size: 13px; font-weight: 800; color: var(--ember); }
+  .history-edit-controls {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: end;
+  }
+  .history-edit-controls label {
+    display: grid; gap: 5px; font-family: var(--num); font-size: 10px;
+    color: var(--fg-3); text-transform: uppercase; font-weight: 700;
+  }
+  .history-edit-controls input {
+    background: var(--surface-2); border: 1px solid var(--line-soft);
+    color: var(--fg); padding: 10px; border-radius: 10px;
+    font-family: var(--num); font-size: 14px;
+  }
+  .history-edit-controls button,
+  .history-edit-btn {
+    appearance: none; border: 1px solid var(--line-soft);
+    background: var(--surface-2); color: var(--fg);
+    border-radius: 10px; padding: 10px 12px;
+    font-family: var(--sans); font-size: 12px; font-weight: 800;
+    cursor: pointer;
+  }
+  .history-edit-delete {
+    border-color: oklch(0.68 0.18 25 / 0.42) !important;
+    background: var(--bad-soft) !important;
+    color: var(--bad) !important;
+  }
+  @media (max-width: 380px) {
+    .history-edit-controls { grid-template-columns: 1fr 1fr; }
+    .history-edit-controls label { grid-column: 1 / -1; }
+  }
   .exercise-note-section {
     margin-top: 12px; padding: 12px;
     background: oklch(0.165 0.007 55 / 0.72);
@@ -531,11 +601,16 @@
     display: grid; place-items: center; font-size: 18px; font-weight: 700;
     transition: transform .16s, color .16s, background .16s;
   }
+  .history-summary-actions { display: flex; align-items: center; gap: 8px; }
   .history-day[open] .history-chevron {
     transform: rotate(90deg); color: var(--ember); background: var(--ember-soft);
   }
   .history-details {
     padding: 0 16px 14px; border-top: 1px solid var(--line-soft);
+  }
+  .history-actions {
+    display: flex; gap: 8px; padding-top: 12px; margin-top: 10px;
+    border-top: 1px solid var(--line-soft);
   }
   .history-date {
     font-family: var(--num); font-size: 11px; color: var(--ember);
@@ -579,6 +654,21 @@
   .chart-stat-label { color: var(--fg-3); }
   .chart-stat-value { color: var(--fg); font-weight: 700; margin-left: 4px; }
   svg.chart { width: 100%; height: 150px; display: block; }
+  .progress-day-summary {
+    margin: -4px 0 14px; color: var(--fg-3);
+    font-family: var(--num); font-size: 11px; letter-spacing: 0.03em;
+  }
+  .progress-exercise-card .chart { margin-bottom: 12px; }
+  .progress-exercise-card .chart:last-child { margin-bottom: 0; }
+  .progress-mini-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 10px 0 6px; font-family: var(--num);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--fg-3);
+  }
+  .progress-mini-title span:last-child {
+    color: var(--fg-4); font-weight: 600; text-transform: none; letter-spacing: 0.02em;
+  }
   .exercise-picker {
     background: var(--surface); border: 1px solid var(--line-soft);
     color: var(--fg); width: 100%; padding: 14px 16px; border-radius: var(--r-md);
@@ -859,6 +949,7 @@
   </div>
   <div id="deload-banner"></div>
   <div id="draft-banner"></div>
+  <div class="history-edit-banner" id="history-edit-banner"></div>
   <div class="day-selector" id="day-selector"></div>
   <div id="exercises-list"></div>
   <div id="workout-note-container" style="display:none">
@@ -873,8 +964,8 @@
 <!-- PROGRESS -->
 <div class="screen" id="screen-progress">
   <h1>Графики</h1>
-  <div class="subtitle">Динамика по упражнениям</div>
-  <select class="exercise-picker" id="exercise-picker" onchange="renderProgress()"></select>
+  <div class="subtitle">Динамика по тренировочным дням</div>
+  <select class="exercise-picker" id="progress-day-picker" onchange="updateProgressDay(this.value)"></select>
   <div id="progress-content"></div>
 </div>
 
@@ -948,25 +1039,14 @@
     <div class="toggle" id="toggle-timer" onclick="toggleSetting('timer')"></div>
   </div>
   <div class="toggle-row">
-    <span>Вибрация по окончании</span>
-    <div class="toggle on" id="toggle-vibrate" onclick="toggleSetting('vibrate')"></div>
-  </div>
-  <div class="toggle-row">
-    <span>Звуковой сигнал</span>
-    <div class="toggle" id="toggle-sound" onclick="toggleSetting('sound')"></div>
-  </div>
-  <div class="toggle-row">
     <span>Скрывать таймер по нулю</span>
     <div class="toggle on" id="toggle-autoclose" onclick="toggleSetting('autoclose')"></div>
-  </div>
-  <div class="toggle-row">
-    <span>Подсказки прибавки веса</span>
-    <div class="toggle on" id="toggle-suggest" onclick="toggleSetting('suggest')"></div>
   </div>
   <div class="info-box" style="border-left-color: #4a9eff;">
     💡 Время отдыха меняется в редакторе программы у каждого упражнения в поле «Отдых, сек». Замены для кнопки «⇄ Замена» там же, в поле «Замены».
   </div>
-  <button class="btn-secondary" onclick="testTimerSignal()">Проверить звук и вибрацию</button>
+  <button class="btn-secondary" onclick="testTimerSignal()">Проверить сигнал таймера</button>
+  <div class="support-note" id="signal-support-note"></div>
   
   <h2>Программа</h2>
   <div class="info-box"><b>Программа v<span id="prog-version">1</span></b> — редактируй упражнения, подходы, повторы. История прошлых программ сохраняется.</div>
@@ -1049,6 +1129,9 @@ let timerInterval = null;
 let timerSeconds = 0;
 let activeSwapExIdx = null;
 let editorDay = "upperA";
+let editingHistoryIndex = null;
+let progressDay = null;
+let dashboardCalendarAnchor = new Date();
 
 function escapeHTML(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
@@ -1115,15 +1198,17 @@ function getStartDate() {
 }
 function setStartDate(d) { localStorage.setItem('start_date', d); updateWeekDisplay(); renderDashboard(); }
 function getSettings() {
-  return Object.assign(
-    { timer: true, suggest: true, vibrate: true, sound: false, autoclose: true },
-    readJSON('settings', {})
-  );
+  const stored = readJSON('settings', {});
+  return {
+    timer: stored.timer !== false,
+    autoclose: stored.autoclose !== false
+  };
 }
 function saveSettings(s) { localStorage.setItem('settings', JSON.stringify(s)); }
 function getWorkoutDraft() { return readJSON('workout_draft', null); }
 function saveWorkoutDraft() {
   if (!currentWorkout) return;
+  if (editingHistoryIndex != null) return;
   localStorage.setItem('workout_draft', JSON.stringify({ currentDay, workout: currentWorkout, saved_at: new Date().toISOString() }));
 }
 function clearWorkoutDraft() { localStorage.removeItem('workout_draft'); }
@@ -1175,6 +1260,22 @@ function getCalendarWeekStart(dateValue = new Date()) {
   d.setDate(d.getDate() - offset);
   return d;
 }
+function getMonthEnd(dateValue = new Date()) {
+  const d = new Date(dateValue);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+function addDays(dateValue, days) {
+  const d = new Date(dateValue);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function maxDate(...dates) {
+  return dates.reduce((best, date) => {
+    const d = new Date(date);
+    if (isNaN(d)) return best;
+    return !best || d > best ? d : best;
+  }, null);
+}
 function hasWorkoutOnDate(dateValue) {
   const key = getDateKey(dateValue);
   return getHistory().some(w => getDateKey(w.date) === key);
@@ -1182,6 +1283,44 @@ function hasWorkoutOnDate(dateValue) {
 function shortWorkoutName(name) {
   if (!name) return '';
   return String(name).split(' — ')[0].trim();
+}
+function getProgramWeekForDate(dateValue) {
+  const start = new Date(getStartDate());
+  const date = new Date(dateValue);
+  if (isNaN(start) || isNaN(date)) return null;
+  start.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  const days = Math.floor((date - start) / 86400000);
+  if (days < 0) return null;
+  return { week: Math.floor(days / 7) + 1, offset: days % 7 };
+}
+function getProgramWeekStartDate(week) {
+  const start = new Date(getStartDate());
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() + (week - 1) * 7);
+  return start;
+}
+function getPlannedWorkoutForDate(dateValue) {
+  const slot = getProgramWeekForDate(dateValue);
+  if (!slot) return null;
+  const offsets = [0, 2, 4];
+  const idx = offsets.indexOf(slot.offset);
+  if (idx === -1) return null;
+  const rotation = slot.week % 2 === 1 ? ROTATION.odd : ROTATION.even;
+  const dayKey = rotation[idx];
+  const day = getProgram().days[dayKey];
+  if (!day) return null;
+  return { day: dayKey, name: day.name, week: slot.week };
+}
+function cloneData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+function setLocalDate(dateValue, dateKey) {
+  const base = new Date(dateValue);
+  const next = new Date(dateKey + 'T12:00:00');
+  if (isNaN(next)) return dateValue;
+  next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), base.getMilliseconds());
+  return next.toISOString();
 }
 function hasDropSet(set) {
   const drop = set && set.drop;
@@ -1288,88 +1427,10 @@ function isPR(exerciseName, weight, reps) {
   return currentE1RM > bestE1RM;
 }
 
-// ===== WEIGHT SUGGESTION =====
-function parseRirValue(value) {
-  if (value === '' || value == null) return null;
-  const nums = String(value).replace(',', '.').match(/\d+(?:\.\d+)?/g);
-  if (!nums || nums.length === 0) return null;
-  const values = nums.slice(0, 2).map(Number).filter(Number.isFinite);
-  if (values.length === 0) return null;
-  return values.reduce((sum, n) => sum + n, 0) / values.length;
-}
 function getWorkingSetsFromLast(lastExercise, count) {
   const valid = lastExercise && lastExercise.sets ? lastExercise.sets.filter(s => s.weight && s.reps) : [];
   if (valid.length <= count) return valid;
   return valid.slice(valid.length - count);
-}
-function shiftWeightPlan(sets, delta) {
-  return sets.map(s => {
-    const w = normalizeNumber(s.weight);
-    return w == null ? null : Math.max(0, w + delta);
-  });
-}
-function formatWeightPlan(weights) {
-  const clean = weights.filter(w => w != null).map(fmtNum);
-  if (clean.length === 0) return '';
-  return clean.every(w => w === clean[0]) ? clean[0] : clean.join(' / ');
-}
-function suggestNextWeight(exerciseName) {
-  const last = getLastExerciseData(exerciseName);
-  if (!last) return null;
-  const exDef = getProgramExerciseDef(exerciseName);
-  if (!exDef) return null;
-  const setCount = parseInt(exDef.sets, 10) || 1;
-  const repsMin = parseInt(exDef.reps_min, 10) || 1;
-  const repsMax = parseInt(exDef.reps_max, 10) || repsMin;
-  const increment = normalizeNumber(exDef.increment) || 0;
-  const validSets = getWorkingSetsFromLast(last, setCount);
-  if (validSets.length < setCount) return null;
-  let topWeight = 0;
-  let hardMisses = 0;
-  let topRepHits = 0;
-  for (const s of validSets) {
-    const r = parseInt(s.reps, 10);
-    const rir = parseRirValue(s.rir);
-    const w = normalizeNumber(s.weight) || 0;
-    if (w > topWeight) topWeight = w;
-    if (r < repsMin || (rir != null && rir <= 0 && r < repsMax)) hardMisses++;
-    if (r >= repsMax) topRepHits++;
-  }
-  if (!topWeight || !increment) return null;
-  if (topRepHits === validSets.length) {
-    const weights = shiftWeightPlan(validSets, increment);
-    return {
-      action: 'up',
-      from: topWeight,
-      to: weights[weights.length - 1],
-      increment,
-      weights,
-      sourceSets: validSets,
-      text: `Все рабочие подходы дошли до ${repsMax} — попробуй ${formatWeightPlan(weights)} кг`
-    };
-  }
-  if (hardMisses >= Math.ceil(validSets.length / 2)) {
-    const weights = shiftWeightPlan(validSets, -increment);
-    return {
-      action: 'down',
-      from: topWeight,
-      to: weights[weights.length - 1],
-      increment,
-      weights,
-      sourceSets: validSets,
-      text: `Просадка по повторам — попробуй ${formatWeightPlan(weights)} кг`
-    };
-  }
-  const weights = shiftWeightPlan(validSets, 0);
-  return {
-    action: 'hold',
-    from: topWeight,
-    to: weights[weights.length - 1],
-    increment: 0,
-    weights,
-    sourceSets: validSets,
-    text: `Оставь прошлую схему ${formatWeightPlan(weights)} кг и добери ${repsMin}-${repsMax}`
-  };
 }
 
 // ===== MOTION =====
@@ -1448,46 +1509,90 @@ function initTapAnimations() {
 }
 
 // ===== NAV =====
+function switchToScreen(name, animate = true) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById('screen-' + name);
+  if (!screen) return;
+  screen.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'workout') renderDaySelector();
+  if (name === 'history') renderHistory();
+  if (name === 'progress') initProgress();
+  if (name === 'measure') renderMeasures();
+  if (name === 'settings') initSettings();
+  if (animate) animateScreen(screen);
+}
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const screen = document.getElementById('screen-' + btn.dataset.screen);
-    screen.classList.add('active');
-    if (btn.dataset.screen === 'dashboard') renderDashboard();
-    if (btn.dataset.screen === 'workout') renderDaySelector();
-    if (btn.dataset.screen === 'history') renderHistory();
-    if (btn.dataset.screen === 'progress') initProgress();
-    if (btn.dataset.screen === 'measure') renderMeasures();
-    if (btn.dataset.screen === 'settings') initSettings();
-    animateScreen(screen);
+    switchToScreen(btn.dataset.screen);
   });
 });
 
 // ===== DASHBOARD =====
 function renderDashboardCalendar(today = new Date()) {
   const start = getCalendarWeekStart(today);
+  const end = getMonthEnd(today);
   const todayKey = getDateKey(today);
   const history = getHistory();
+  const program = getProgram();
   const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-  const days = Array.from({ length: 7 }, (_, idx) => {
+  const planOffsets = [0, 2, 4];
+  const weekState = new Map();
+  let lastTrainingDate = null;
+  function getState(week) {
+    if (!weekState.has(week)) weekState.set(week, new Set());
+    return weekState.get(week);
+  }
+  const daysCount = Math.max(1, Math.floor((end - start) / 86400000) + 1);
+  const days = Array.from({ length: daysCount }, (_, idx) => {
     const date = new Date(start);
     date.setDate(start.getDate() + idx);
     const key = getDateKey(date);
+    const slot = getProgramWeekForDate(date);
     const workouts = history.filter(w => getDateKey(w.date) === key);
+    workouts.forEach(w => {
+      const workoutSlot = getProgramWeekForDate(w.date);
+      if (workoutSlot && w.day) getState(workoutSlot.week).add(w.day);
+    });
     const names = workouts.map(w => shortWorkoutName(w.dayName)).filter(Boolean);
-    const label = names.length > 1 ? `${names[0]} +${names.length - 1}` : (names[0] || '');
+    let planned = null;
+    if (workouts.length === 0 && key >= todayKey && date.getMonth() === today.getMonth() && slot && !isDeloadWeek(slot.week)) {
+      const rotation = slot.week % 2 === 1 ? ROTATION.odd : ROTATION.even;
+      const state = getState(slot.week);
+      const nextIdx = rotation.findIndex(dayKey => !state.has(dayKey));
+      if (nextIdx !== -1) {
+        const targetDate = addDays(getProgramWeekStartDate(slot.week), planOffsets[nextIdx]);
+        const minAfterLast = lastTrainingDate ? addDays(lastTrainingDate, 2) : null;
+        const planDate = maxDate(targetDate, today, minAfterLast || targetDate);
+        if (getDateKey(planDate) === key) {
+          const dayKey = rotation[nextIdx];
+          const day = program.days[dayKey];
+          if (day) {
+            planned = { day: dayKey, name: day.name, week: slot.week };
+            state.add(dayKey);
+          }
+        }
+      }
+    }
+    if (workouts.length || planned) lastTrainingDate = date;
+    const showPlan = !!planned;
+    const label = names.length > 1 ? `${names[0]} +${names.length - 1}` : (names[0] || (showPlan ? shortWorkoutName(planned.name) : ''));
     const classes = ['cal-day'];
+    if (date.getMonth() !== today.getMonth()) classes.push('muted');
     if (key === todayKey) classes.push('today');
     if (workouts.length) classes.push('done');
+    if (showPlan) classes.push('planned');
     return `<div class="${classes.join(' ')}">
-      <div class="cal-weekday">${weekdays[idx]}</div>
+      <div class="cal-weekday">${weekdays[(date.getDay() + 6) % 7]}</div>
       <div class="cal-num">${date.getDate()}</div>
+      <div class="cal-today-label">${key === todayKey ? 'Сегодня' : ''}</div>
       <div class="cal-workout">${label ? escapeHTML(label) : ''}</div>
     </div>`;
   }).join('');
-  return `<h2>Календарь</h2><div class="dash-calendar">${days}</div>`;
+  const monthName = today.toLocaleDateString('ru-RU', { month: 'long' });
+  return `<div class="dash-calendar-head"><h2>Календарь</h2><div class="dash-calendar-range">${monthName} до ${end.getDate()}</div></div>
+    <div class="dash-calendar-scroll"><div class="dash-calendar">${days}</div></div>`;
 }
 function renderDashboard() {
   const week = getCurrentWeek();
@@ -1616,6 +1721,7 @@ function renderDaySelector() {
   document.getElementById('deload-banner').innerHTML = isDeloadWeek(week) 
     ? `<div class="deload-banner"><div class="deload-icon">!</div><div><b>Неделя 7 — Deload.</b> Веса −40%, RIR 3.</div></div>` : '';
   renderDraftBanner();
+  renderHistoryEditBanner();
 }
 
 function updateWeekDisplay() {
@@ -1663,9 +1769,106 @@ function renderDraftBanner() {
     </div>
   </div>`;
 }
+function updateFinishButtonLabel() {
+  const btn = document.getElementById('finish-btn');
+  if (btn) btn.textContent = editingHistoryIndex != null ? 'Сохранить изменения' : 'Завершить тренировку';
+}
+function renderHistoryEditBanner() {
+  const holder = document.getElementById('history-edit-banner');
+  if (!holder) return;
+  if (editingHistoryIndex == null || !currentWorkout) {
+    holder.classList.remove('active');
+    holder.innerHTML = '';
+    updateFinishButtonLabel();
+    return;
+  }
+  holder.classList.add('active');
+  holder.innerHTML = `
+    <div class="history-edit-banner-title">Редактирование записи из истории</div>
+    <div class="history-edit-controls">
+      <label>Дата тренировки
+        <input type="date" value="${escapeHTML(getDateKey(currentWorkout.date))}" onchange="updateWorkoutDate(this.value)">
+      </label>
+      <button onclick="cancelHistoryEdit()">Отмена</button>
+      <button class="history-edit-delete" onclick="deleteEditingHistoryWorkout()">Удалить</button>
+    </div>
+  `;
+  updateFinishButtonLabel();
+}
+function resetWorkoutScreen() {
+  currentWorkout = null;
+  currentDay = null;
+  editingHistoryIndex = null;
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('workout-title').textContent = 'Выбери день';
+  document.getElementById('workout-date').textContent = '';
+  document.getElementById('exercises-list').innerHTML = '';
+  document.getElementById('workout-note').value = '';
+  document.getElementById('workout-note-container').style.display = 'none';
+  document.getElementById('finish-btn').style.display = 'none';
+  renderDraftBanner();
+  renderHistoryEditBanner();
+  updateWeekDisplay();
+}
+function updateWorkoutDate(dateKey) {
+  if (!currentWorkout || !dateKey) return;
+  currentWorkout.date = setLocalDate(currentWorkout.date, dateKey);
+  const d = new Date(currentWorkout.date);
+  document.getElementById('workout-date').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  saveWorkoutDraft();
+}
+function cancelHistoryEdit() {
+  if (!confirm('Отменить редактирование? Несохраненные изменения пропадут.')) return;
+  resetWorkoutScreen();
+  switchToScreen('history');
+}
+function deleteEditingHistoryWorkout() {
+  if (editingHistoryIndex == null) return;
+  const history = getHistory();
+  const workout = history[editingHistoryIndex];
+  if (!workout) {
+    alert('Не нашел эту тренировку в истории.');
+    resetWorkoutScreen();
+    switchToScreen('history');
+    return;
+  }
+  const date = new Date(workout.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const title = shortWorkoutName(workout.dayName || workout.day || 'тренировку');
+  if (!confirm(`Удалить ${title} за ${date}? Это нельзя отменить.`)) return;
+  history.splice(editingHistoryIndex, 1);
+  saveHistory(history);
+  clearWorkoutDraft();
+  resetWorkoutScreen();
+  renderDashboard();
+  switchToScreen('history');
+  alert('Тренировка удалена ✓');
+}
+function editHistoryWorkout(index) {
+  const history = getHistory();
+  const workout = history[index];
+  if (!workout) { alert('Не нашел эту тренировку в истории.'); return; }
+  if (currentWorkout && !confirm('Сейчас открыта другая тренировка. Перейти к редактированию записи из истории?')) return;
+  clearWorkoutDraft();
+  editingHistoryIndex = index;
+  currentWorkout = cloneData(workout);
+  currentDay = currentWorkout.day;
+  switchToScreen('workout', false);
+  document.getElementById('workout-title').textContent = currentWorkout.dayName;
+  const d = new Date(currentWorkout.date);
+  document.getElementById('workout-date').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', b.dataset.day === currentDay));
+  document.getElementById('workout-note').value = currentWorkout.note || '';
+  document.getElementById('finish-btn').style.display = 'block';
+  document.getElementById('workout-note-container').style.display = 'block';
+  renderDraftBanner();
+  renderHistoryEditBanner();
+  renderExercises();
+  animateScreen(document.getElementById('screen-workout'));
+}
 function restoreWorkoutDraft() {
   const draft = getWorkoutDraft();
   if (!draft || !draft.workout) return;
+  editingHistoryIndex = null;
   currentDay = draft.currentDay || draft.workout.day;
   currentWorkout = draft.workout;
   document.getElementById('workout-title').textContent = currentWorkout.dayName;
@@ -1676,6 +1879,7 @@ function restoreWorkoutDraft() {
   document.getElementById('finish-btn').style.display = 'block';
   document.getElementById('workout-note-container').style.display = 'block';
   renderDraftBanner();
+  renderHistoryEditBanner();
   renderExercises();
 }
 function discardWorkoutDraft() {
@@ -1685,6 +1889,8 @@ function discardWorkoutDraft() {
 }
 
 function startWorkout(dayKey) {
+  if (editingHistoryIndex != null && !confirm('Выйти из редактирования истории и начать новую тренировку?')) return;
+  editingHistoryIndex = null;
   if (currentWorkout && hasWorkoutInput() && !confirm('Текущая тренировка не завершена. Начать новую и заменить черновик?')) return;
   if (!currentWorkout && getWorkoutDraft() && !confirm('Есть незавершенная тренировка. Начать новую и заменить черновик?')) return;
   const program = getProgram();
@@ -1705,14 +1911,14 @@ function startWorkout(dayKey) {
   renderExercises();
   saveWorkoutDraft();
   renderDraftBanner();
+  renderHistoryEditBanner();
   document.getElementById('finish-btn').style.display = 'block';
   document.getElementById('workout-note-container').style.display = 'block';
 }
 
 function createWorkoutExercise(ex) {
   const last = getLastExerciseData(ex.name);
-  const suggestion = getSettings().suggest ? suggestNextWeight(ex.name) : null;
-  const sourceSets = suggestion && suggestion.sourceSets ? suggestion.sourceSets : getWorkingSetsFromLast(last, ex.sets);
+  const sourceSets = getWorkingSetsFromLast(last, ex.sets);
   return {
     name: ex.name,
     target: ex.target,
@@ -1720,9 +1926,8 @@ function createWorkoutExercise(ex) {
     note: '',
     sets: Array(ex.sets).fill(null).map((_, idx) => {
       const lastSet = sourceSets[idx] || (last && last.sets[idx]);
-      const suggestedWeight = suggestion && suggestion.weights ? suggestion.weights[idx] : null;
       return {
-        weight: suggestedWeight != null ? fmtNum(suggestedWeight) : (lastSet && lastSet.weight ? lastSet.weight : ''),
+        weight: lastSet && lastSet.weight ? lastSet.weight : '',
         reps: lastSet && lastSet.reps ? lastSet.reps : '',
         rir: '',
         done: false,
@@ -1735,11 +1940,9 @@ function createWorkoutExercise(ex) {
 function renderExercises() {
   const list = document.getElementById('exercises-list');
   list.innerHTML = '';
-  const settings = getSettings();
   currentWorkout.exercises.forEach((ex, exIdx) => {
     const last = getLastExerciseData(ex.name);
     const lastText = last ? formatLastSets(last.sets) : '';
-    const suggestion = settings.suggest ? suggestNextWeight(ex.name) : null;
     const safeName = escapeHTML(ex.name);
     const safeTarget = escapeHTML(ex.target || '');
 
@@ -1760,7 +1963,6 @@ function renderExercises() {
         <button class="icon-btn" onclick="moveExercise(${exIdx}, 1)" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''} aria-label="Вниз">↓</button>
         <button class="icon-btn" onclick="openSwap(${exIdx})">⇄ Замена</button>
       </div>
-      ${suggestion ? `<div class="suggest-tip ${suggestion.action}" onclick="applySuggestion(${exIdx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.5 1 2.3v1h6v-1c0-.8.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>${escapeHTML(suggestion.text)}</div>` : ''}
       <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span><span>drop</span></div>
       <div class="sets">${ex.sets.map((s, sIdx) => renderSetRow(exIdx, sIdx, s, last)).join('')}</div>
       ${last ? renderCompareRow(ex, last) : ''}
@@ -1832,19 +2034,6 @@ function renderSetRow(exIdx, sIdx, set, lastEx) {
   `;
 }
 
-function applySuggestion(exIdx) {
-  const ex = currentWorkout.exercises[exIdx];
-  const suggestion = suggestNextWeight(ex.name);
-  if (!suggestion || !suggestion.weights) return;
-  ex.sets.forEach((set, idx) => {
-    const weight = suggestion.weights[idx];
-    const sourceSet = suggestion.sourceSets && suggestion.sourceSets[idx];
-    if (weight != null) set.weight = fmtNum(weight);
-    if (sourceSet && sourceSet.reps) set.reps = sourceSet.reps;
-  });
-  saveWorkoutDraft();
-  renderExercises();
-}
 function updateSet(exIdx, sIdx, field, value) {
   const set = currentWorkout.exercises[exIdx].sets[sIdx];
   set[field] = value;
@@ -1975,49 +2164,88 @@ function closeModal() { document.getElementById('modal').classList.remove('activ
 
 // ===== TIMER =====
 let audioCtx = null;
-function playBeep() {
+function canVibrate() {
+  return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+}
+function getSignalSupportText() {
+  if (canVibrate()) {
+    return 'На финише таймера приложение всегда пробует дать звук, вибрацию и визуальную вспышку. Если звук не слышен, нажми «Проверить сигнал таймера» один раз после открытия сайта: так браузер разрешает аудио.';
+  }
+  return 'Вибрация недоступна в этом браузере. На iPhone Safari это ограничение iOS: сайт не может заставить телефон вибрировать, а беззвучный режим может глушить звук. Визуальная вспышка таймера останется всегда.';
+}
+async function primeTimerAudio() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.4);
-    // second beep
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
-    osc2.connect(gain2); gain2.connect(audioCtx.destination);
-    osc2.frequency.value = 1320;
-    osc2.type = 'sine';
-    gain2.gain.setValueAtTime(0.001, audioCtx.currentTime + 0.5);
-    gain2.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.52);
-    gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.9);
-    osc2.start(audioCtx.currentTime + 0.5);
-    osc2.stop(audioCtx.currentTime + 0.9);
-  } catch (e) {}
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.01);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
-function testTimerSignal() {
-  const settings = getSettings();
-  settings.sound = true;
-  settings.vibrate = true;
-  saveSettings(settings);
-  initSettings();
-  playBeep();
-  const canVibrate = !!navigator.vibrate;
-  if (canVibrate) navigator.vibrate([200, 100, 300]);
-  alert(canVibrate
-    ? 'Проверка: звук включен, вибрация отправлена.'
-    : 'Звук включен. Вибрация недоступна в этом браузере/на этом устройстве.');
+async function playBeep(repeats = 2) {
+  try {
+    if (!await primeTimerAudio()) return false;
+    const now = audioCtx.currentTime + 0.03;
+    for (let i = 0; i < repeats; i++) {
+      const t = now + i * 0.55;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = i % 2 ? 1320 : 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+      osc.start(t);
+      osc.stop(t + 0.36);
+    }
+    return true;
+  } catch (e) {}
+  return false;
+}
+function vibrateSignal(pattern = [220, 90, 220, 90, 500]) {
+  if (!canVibrate()) return false;
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return false;
+  try { return navigator.vibrate(pattern); } catch (e) { return false; }
+}
+function flashTimerSignal() {
+  const bar = document.getElementById('timer-bar');
+  if (bar) {
+    bar.classList.remove('done-pulse');
+    void bar.offsetWidth;
+    bar.classList.add('active', 'done-pulse');
+    setTimeout(() => bar.classList.remove('done-pulse'), 3200);
+  }
+  document.body.classList.remove('timer-flash');
+  void document.body.offsetWidth;
+  document.body.classList.add('timer-flash');
+  setTimeout(() => document.body.classList.remove('timer-flash'), 2200);
+  const oldTitle = document.title;
+  document.title = 'Готово! Отдых закончен';
+  setTimeout(() => { if (document.title === 'Готово! Отдых закончен') document.title = oldTitle; }, 4500);
+}
+function fireTimerSignal() {
+  flashTimerSignal();
+  vibrateSignal();
+  playBeep(4);
+}
+async function testTimerSignal() {
+  const sound = await playBeep(3);
+  const vib = vibrateSignal([220, 90, 350]);
+  flashTimerSignal();
+  alert(`Проверка: звук ${sound ? 'отправлен' : 'заблокирован браузером'}, вибрация ${vib ? 'отправлена' : 'не поддерживается или заблокирована'}.`);
 }
 function startTimer(s) {
   stopTimer();
   timerSeconds = s;
+  primeTimerAudio();
   document.getElementById('timer-bar').classList.add('active');
   updateTimerDisplay();
   timerInterval = setInterval(() => {
@@ -2027,10 +2255,9 @@ function startTimer(s) {
       clearInterval(timerInterval);
       timerInterval = null;
       const settings = getSettings();
-      if (settings.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-      if (settings.sound) playBeep();
+      fireTimerSignal();
       if (settings.autoclose) {
-        setTimeout(() => { document.getElementById('timer-bar').classList.remove('active'); }, 1500);
+        setTimeout(() => { document.getElementById('timer-bar').classList.remove('active'); }, 3200);
       }
     }
   }, 1000);
@@ -2062,35 +2289,38 @@ document.getElementById('finish-btn').addEventListener('click', () => {
   if (!currentWorkout) return;
   const hasData = currentWorkout.exercises.some(ex => ex.sets.some(setHasLiftData));
   if (!hasData) { alert('Заполни хотя бы один подход'); return; }
-  if (!confirm('Завершить и сохранить?')) return;
+  const isEditingHistory = editingHistoryIndex != null;
+  if (!confirm(isEditingHistory ? 'Сохранить изменения в истории?' : 'Завершить и сохранить?')) return;
   currentWorkout.note = document.getElementById('workout-note').value || '';
   const history = getHistory();
-  history.push(currentWorkout);
+  if (isEditingHistory) {
+    if (!history[editingHistoryIndex]) { alert('Не нашел эту запись в истории.'); return; }
+    history[editingHistoryIndex] = currentWorkout;
+  } else {
+    history.push(currentWorkout);
+  }
   saveHistory(history);
   clearWorkoutDraft();
-  currentWorkout = null;
-  currentDay = null;
-  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('workout-title').textContent = 'Выбери день';
-  document.getElementById('workout-date').textContent = '';
-  document.getElementById('exercises-list').innerHTML = '';
-  document.getElementById('workout-note').value = '';
-  document.getElementById('workout-note-container').style.display = 'none';
-  document.getElementById('finish-btn').style.display = 'none';
-  renderDraftBanner();
-  updateWeekDisplay();
-  alert('Сохранено ✓');
+  resetWorkoutScreen();
+  renderDashboard();
+  if (isEditingHistory) {
+    switchToScreen('history');
+    alert('Изменения сохранены ✓');
+  } else {
+    alert('Сохранено ✓');
+  }
 });
 
 // ===== HISTORY =====
 function renderHistory() {
   const list = document.getElementById('history-list');
-  const history = getHistory().slice().reverse();
-  if (history.length === 0) {
+  const rawHistory = getHistory();
+  const history = rawHistory.map((workout, index) => ({ workout, index })).reverse();
+  if (rawHistory.length === 0) {
     list.innerHTML = '<div class="empty-state">Пока нет записей.<br>Начни первую тренировку.</div>';
     return;
   }
-  list.innerHTML = history.map(w => {
+  list.innerHTML = history.map(({ workout: w, index }) => {
     const d = new Date(w.date);
     const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
     const weekTag = w.week ? `<span style="color:#888;"> · Нед. ${w.week}</span>` : '';
@@ -2108,93 +2338,143 @@ function renderHistory() {
           <div class="history-summary-title">${escapeHTML(title)}</div>
           <div class="history-summary-sub">${dateStr}${weekTag}${verTag} · ${filledExercises.length} упр.</div>
         </div>
-        <div class="history-chevron">›</div>
+        <div class="history-summary-actions">
+          <button class="history-edit-btn" onclick="event.preventDefault(); event.stopPropagation(); editHistoryWorkout(${index})">Редактировать</button>
+          <div class="history-chevron">›</div>
+        </div>
       </summary>
-      <div class="history-details">${exercises}${w.note ? `<div class="history-note">📝 ${escapeHTML(w.note)}</div>` : ''}</div>
+      <div class="history-details">
+        ${exercises}${w.note ? `<div class="history-note">📝 ${escapeHTML(w.note)}</div>` : ''}
+      </div>
     </details>`;
   }).join('');
 }
 
 // ===== PROGRESS =====
-function getAllExerciseNames() {
-  const names = new Set();
-  getHistory().forEach(w => w.exercises.forEach(ex => {
-    if (ex.sets.some(setHasLiftData)) names.add(ex.name);
-  }));
-  return Array.from(names);
-}
 function initProgress() {
-  const picker = document.getElementById('exercise-picker');
-  const names = getAllExerciseNames();
-  if (names.length === 0) {
-    document.getElementById('progress-content').innerHTML = '<div class="empty-state">Нет данных.<br>Сделай минимум 2 тренировки одного упражнения.</div>';
+  const picker = document.getElementById('progress-day-picker');
+  const days = getProgressDays();
+  if (!picker) return;
+  if (days.length === 0) {
+    document.getElementById('progress-content').innerHTML = '<div class="empty-state">Нет тренировочных дней.</div>';
     picker.innerHTML = '<option>Нет данных</option>';
     return;
   }
-  picker.innerHTML = names.map(n => `<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`).join('');
+  const stored = localStorage.getItem('progress_day');
+  const selected = days.some(d => d.key === progressDay) ? progressDay :
+    (days.some(d => d.key === stored) ? stored : days[0].key);
+  progressDay = selected;
+  picker.innerHTML = days.map(d =>
+    `<option value="${escapeHTML(d.key)}" ${d.key === selected ? 'selected' : ''}>${escapeHTML(d.name)}</option>`
+  ).join('');
   renderProgress();
 }
-function renderProgress() {
-  const name = document.getElementById('exercise-picker').value;
-  const history = getHistory();
+function updateProgressDay(dayKey) {
+  progressDay = dayKey;
+  localStorage.setItem('progress_day', dayKey);
+  renderProgress();
+}
+function getProgressDays() {
+  const program = getProgram();
+  const seen = new Set();
+  const days = Object.keys(program.days || {}).map(key => {
+    seen.add(key);
+    return { key, name: program.days[key].name || key };
+  });
+  getHistory().forEach(w => {
+    if (!w.day || seen.has(w.day)) return;
+    seen.add(w.day);
+    days.push({ key: w.day, name: w.dayName || w.day });
+  });
+  return days;
+}
+function getProgressExercisesForDay(dayKey) {
+  const program = getProgram();
+  const names = [];
+  const seen = new Set();
+  const day = program.days && program.days[dayKey];
+  if (day && Array.isArray(day.exercises)) {
+    day.exercises.forEach(ex => {
+      if (!ex.name || seen.has(ex.name)) return;
+      seen.add(ex.name);
+      names.push({ name: ex.name, target: ex.target || '' });
+    });
+  }
+  getHistory().forEach(w => {
+    if (w.day !== dayKey || !Array.isArray(w.exercises)) return;
+    w.exercises.forEach(ex => {
+      if (!ex.name || seen.has(ex.name) || !ex.sets.some(setHasLiftData)) return;
+      seen.add(ex.name);
+      names.push({ name: ex.name, target: ex.target || '' });
+    });
+  });
+  return names;
+}
+function getExerciseProgressPoints(exerciseName, dayKey) {
   const points = [];
-  history.forEach(w => {
-    const ex = w.exercises.find(e => e.name === name);
+  getHistory().forEach(w => {
+    if (dayKey && w.day !== dayKey) return;
+    const ex = (w.exercises || []).find(e => e.name === exerciseName);
     if (!ex) return;
-    const valid = ex.sets.filter(s => s.weight && s.reps);
+    const valid = ex.sets.filter(s => normalizeNumber(s.weight) != null && normalizeNumber(s.reps) != null);
     if (valid.length === 0) return;
-    const weights = valid.map(s => parseFloat(s.weight)).filter(x => !isNaN(x));
+    const weights = valid.map(s => normalizeNumber(s.weight)).filter(x => x != null);
     if (weights.length === 0) return;
     const topWeight = Math.max(...weights);
     const tonnage = ex.sets.reduce((sum, s) => sum + getSetVolume(s), 0);
     const topSet = valid.reduce((best, s) => {
-      const wv = parseFloat(s.weight), r = parseInt(s.reps);
-      if (isNaN(wv) || isNaN(r) || r >= 37) return best;
+      const wv = normalizeNumber(s.weight), r = parseInt(s.reps);
+      if (wv == null || isNaN(r) || r >= 37) return best;
       const e = wv * (36 / (37 - r));
       return (!best || e > best.e1rm) ? { e1rm: e } : best;
     }, null);
     points.push({ date: new Date(w.date), topWeight, tonnage, e1rm: topSet ? topSet.e1rm : topWeight });
   });
-  if (points.length < 2) {
-    document.getElementById('progress-content').innerHTML = '<div class="empty-state">Нужно минимум 2 тренировки этого упражнения.</div>';
+  return points.sort((a, b) => a.date - b.date);
+}
+function renderProgress() {
+  const picker = document.getElementById('progress-day-picker');
+  const dayKey = picker ? picker.value : progressDay;
+  const day = getProgressDays().find(d => d.key === dayKey);
+  const exercises = getProgressExercisesForDay(dayKey);
+  const cards = exercises.map(ex => {
+    const points = getExerciseProgressPoints(ex.name, dayKey);
+    return renderProgressExerciseCard(ex, points);
+  }).filter(Boolean);
+  const content = document.getElementById('progress-content');
+  if (!cards.length) {
+    content.innerHTML = '<div class="empty-state">Нужно минимум 2 сохраненные тренировки одного упражнения в этом дне.</div>';
     return;
   }
+  content.innerHTML = `
+    <div class="progress-day-summary">${escapeHTML(day ? day.name : 'День')} · ${cards.length} граф.</div>
+    ${cards.join('')}
+  `;
+}
+function renderProgressExerciseCard(exercise, points) {
+  if (points.length < 2) return '';
   const first = points[0], last = points[points.length - 1];
   const wDelta = (last.topWeight - first.topWeight).toFixed(1);
   const wPct = first.topWeight ? ((last.topWeight - first.topWeight) / first.topWeight * 100).toFixed(0) : 0;
   const tDelta = (last.tonnage - first.tonnage).toFixed(0);
   const tPct = first.tonnage ? ((last.tonnage - first.tonnage) / first.tonnage * 100).toFixed(0) : 0;
 
-  // Forecast (linear regression on e1rm)
-  const forecast = forecastValue(points.map(p => ({ x: p.date.getTime(), y: p.e1rm })));
-  const forecastHtml = forecast ? `<span class="forecast-pill">К концу программы: ~${forecast.toFixed(1)} кг</span>` : '';
-
-  document.getElementById('progress-content').innerHTML = `
-    <div class="chart-card">
-      <div class="chart-title">Топ рабочий вес</div>
-      <div class="chart-subtitle">Максимальный вес в подходе</div>
+  return `
+    <div class="chart-card progress-exercise-card">
+      <div class="chart-title">${escapeHTML(exercise.name)}</div>
+      <div class="chart-subtitle">${escapeHTML(exercise.target || `${points.length} трен.`)}</div>
       <div class="chart-stats">
         <div><span class="chart-stat-label">Сейчас:</span> <span class="chart-stat-value">${last.topWeight} кг</span></div>
         <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${wDelta >= 0 ? '+' : ''}${wDelta} кг (${wPct >= 0 ? '+' : ''}${wPct}%)</span></div>
       </div>
+      <div class="progress-mini-title"><span>Топ вес</span><span>${points.length} точ.</span></div>
       ${renderLineChart(points.map(p => ({ x: p.date, y: p.topWeight })), '#ff6b00')}
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Объём (тоннаж)</div>
-      <div class="chart-subtitle">Сумма (вес × повторы) за тренировку</div>
+      <div class="progress-mini-title"><span>Тоннаж</span><span>за упражнение</span></div>
       <div class="chart-stats">
         <div><span class="chart-stat-label">Сейчас:</span> <span class="chart-stat-value">${last.tonnage} кг</span></div>
         <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${tDelta >= 0 ? '+' : ''}${tDelta} кг (${tPct >= 0 ? '+' : ''}${tPct}%)</span></div>
       </div>
       ${renderLineChart(points.map(p => ({ x: p.date, y: p.tonnage })), '#4a9eff')}
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Расчётный 1ПМ ${forecastHtml}</div>
-      <div class="chart-subtitle">Прогноз макс. на 1 повтор (Brzycki)</div>
-      <div class="chart-stats">
-        <div><span class="chart-stat-label">Сейчас:</span> <span class="chart-stat-value">${last.e1rm.toFixed(1)} кг</span></div>
-      </div>
-      ${renderLineChart(points.map(p => ({ x: p.date, y: p.e1rm })), '#5fcf6f')}
     </div>
   `;
 }
@@ -2426,12 +2706,11 @@ function renderMeasures() {
 function initSettings() {
   const s = getSettings();
   document.getElementById('toggle-timer').classList.toggle('on', !!s.timer);
-  document.getElementById('toggle-suggest').classList.toggle('on', !!s.suggest);
-  document.getElementById('toggle-vibrate').classList.toggle('on', !!s.vibrate);
-  document.getElementById('toggle-sound').classList.toggle('on', !!s.sound);
   document.getElementById('toggle-autoclose').classList.toggle('on', !!s.autoclose);
   document.getElementById('start-date').value = getStartDate();
   document.getElementById('prog-version').textContent = getProgram().version;
+  const signalNote = document.getElementById('signal-support-note');
+  if (signalNote) signalNote.textContent = getSignalSupportText();
 }
 function toggleSetting(key) {
   const s = getSettings();
@@ -2513,10 +2792,6 @@ function renderEditorExercise(ex, idx) {
           <label>Повт. макс</label>
           <input class="editor-input num" type="number" value="${ex.reps_max || ''}" onchange="updateEditorEx(${idx}, 'reps_max', parseInt(this.value)||0)">
         </div>
-        <div class="editor-field">
-          <label>Шаг веса, кг</label>
-          <input class="editor-input num" type="number" step="0.5" value="${ex.increment || 0}" onchange="updateEditorEx(${idx}, 'increment', parseFloat(this.value)||0)">
-        </div>
       </div>
       <div class="editor-field" style="margin-top:10px;">
         <label>Замены для кнопки «⇄ Замена»</label>
@@ -2551,7 +2826,7 @@ function deleteEditorEx(idx) {
 function addEditorExercise() {
   const p = getProgram();
   p.days[editorDay].exercises.push({
-    name: "Новое упражнение", target: "3×10, RIR 1", sets: 3, reps_min: 10, reps_max: 12, rest: 90, increment: 2.5, swaps: []
+    name: "Новое упражнение", target: "3×10, RIR 1", sets: 3, reps_min: 10, reps_max: 12, rest: 90, swaps: []
   });
   saveProgram(p);
   renderProgramEditor();
