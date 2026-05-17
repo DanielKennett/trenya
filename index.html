@@ -659,6 +659,39 @@
   .chart-stat-label { color: var(--fg-3); }
   .chart-stat-value { color: var(--fg); font-weight: 700; margin-left: 4px; }
   svg.chart { width: 100%; height: 150px; display: block; }
+  .health-range {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-bottom: 12px;
+  }
+  .health-range button {
+    padding: 10px 8px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--line-soft);
+    color: var(--fg-3); font-family: var(--sans); font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
+  .health-range button.active {
+    background: var(--ember); border-color: var(--ember); color: var(--bg);
+  }
+  .health-workout-month .history-details { padding-bottom: 8px; }
+  .health-workout-item {
+    border-top: 1px solid var(--line-soft);
+  }
+  .health-workout-item:first-child { border-top: 0; }
+  .health-workout-item summary {
+    list-style: none; cursor: pointer; padding: 11px 0;
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+  }
+  .health-workout-item summary::-webkit-details-marker { display: none; }
+  .health-workout-chevron {
+    width: 24px; height: 24px; border-radius: 8px;
+    background: var(--surface-2); color: var(--fg-3);
+    display: grid; place-items: center; font-size: 16px; font-weight: 700;
+    transition: transform .16s, color .16s, background .16s;
+  }
+  .health-workout-item[open] .health-workout-chevron {
+    transform: rotate(90deg); color: var(--ember); background: var(--ember-soft);
+  }
+  .health-workout-detail { padding: 0 0 12px; }
   .progress-day-summary {
     margin: -4px 0 14px; color: var(--fg-3);
     font-family: var(--num); font-size: 11px; letter-spacing: 0.03em;
@@ -1038,6 +1071,10 @@
     <div class="support-note" id="health-import-status"></div>
   </div>
   <div id="health-overview"></div>
+  <h2>Сон</h2>
+  <div id="health-sleep"></div>
+  <h2>Состав тела</h2>
+  <div id="health-body"></div>
   <h2>Графики</h2>
   <div id="health-charts"></div>
   <h2>Тренировки Apple Watch</h2>
@@ -1196,6 +1233,10 @@ function numberFromInput(id) {
 }
 function round1(value) {
   return Math.round(value * 10) / 10;
+}
+function formatKg(value) {
+  const rounded = value >= 100 ? Math.round(value) : round1(value);
+  return rounded.toLocaleString('ru-RU');
 }
 
 // ===== STORAGE =====
@@ -2434,6 +2475,10 @@ function renderHistory() {
     const weekTag = w.week ? `<span style="color:#888;"> · Нед. ${w.week}</span>` : '';
     const verTag = w.programVersion ? `<span style="color:#666;font-size:11px;"> · v${w.programVersion}</span>` : '';
     const filledExercises = w.exercises.filter(ex => ex.sets.some(setHasLiftData));
+    const workoutTonnage = round1(filledExercises.reduce((total, ex) => (
+      total + ex.sets.reduce((sum, set) => sum + getSetVolume(set), 0)
+    ), 0));
+    const tonnageTag = workoutTonnage ? ` · тоннаж ${formatKg(workoutTonnage)} кг` : '';
     const exercises = filledExercises.map(ex => {
       const setsText = ex.sets.filter(setHasLiftData).map(formatSetForHistory).join(' · ');
       const exNote = ex.note ? `<div class="history-note">📝 ${escapeHTML(ex.note)}</div>` : '';
@@ -2444,7 +2489,7 @@ function renderHistory() {
       <summary>
         <div>
           <div class="history-summary-title">${escapeHTML(title)}</div>
-          <div class="history-summary-sub">${dateStr}${weekTag}${verTag} · ${filledExercises.length} упр.</div>
+          <div class="history-summary-sub">${dateStr}${weekTag}${verTag} · ${filledExercises.length} упр.${tonnageTag}</div>
         </div>
         <div class="history-summary-actions">
           <button class="history-edit-btn" onclick="event.preventDefault(); event.stopPropagation(); editHistoryWorkout(${index})">Редактировать</button>
@@ -2608,11 +2653,48 @@ function forecastValue(points) {
   return a + b * endTarget.getTime();
 }
 
-function renderLineChart(data, color, goal) {
-  if (data.length < 2) return '';
+function chartPointKey(point) {
+  return `${point.x.getTime()}|${point.y}`;
+}
+function downsampleChartData(data, maxPoints = 80) {
+  const sorted = data.slice().sort((a, b) => a.x - b.x);
+  if (sorted.length <= maxPoints) return sorted;
+  const keep = new Map();
+  const add = (point) => keep.set(chartPointKey(point), point);
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  add(first);
+  add(last);
+  const bucketCount = Math.max(1, Math.floor((maxPoints - 2) / 2));
+  const span = last.x.getTime() - first.x.getTime() || 1;
+  const buckets = Array.from({ length: bucketCount }, () => []);
+  sorted.slice(1, -1).forEach(point => {
+    const raw = ((point.x.getTime() - first.x.getTime()) / span) * bucketCount;
+    const index = Math.max(0, Math.min(bucketCount - 1, Math.floor(raw)));
+    buckets[index].push(point);
+  });
+  buckets.forEach(bucket => {
+    if (!bucket.length) return;
+    let min = bucket[0], max = bucket[0];
+    bucket.forEach(point => {
+      if (point.y < min.y) min = point;
+      if (point.y > max.y) max = point;
+    });
+    add(min);
+    add(max);
+  });
+  return Array.from(keep.values()).sort((a, b) => a.x - b.x);
+}
+function renderLineChart(data, color, goal, options = {}) {
+  const source = data
+    .map(d => ({ x: d.x instanceof Date ? d.x : new Date(d.x), y: Number(d.y) }))
+    .filter(d => !isNaN(d.x) && Number.isFinite(d.y))
+    .sort((a, b) => a.x - b.x);
+  if (source.length < 2) return '';
+  const series = options.reducePoints ? downsampleChartData(source, options.maxPoints || 80) : source;
   const W = 320, H = 140, padL = 32, padR = 10, padT = 12, padB = 24;
-  const xs = data.map(d => d.x.getTime());
-  const ys = data.map(d => d.y);
+  const xs = source.map(d => d.x.getTime());
+  const ys = source.map(d => d.y);
   if (goal != null) ys.push(goal);
   const xMin = Math.min(...xs), xMax = Math.max(...xs);
   const yMin = Math.min(...ys), yMax = Math.max(...ys);
@@ -2620,15 +2702,28 @@ function renderLineChart(data, color, goal) {
   const yLo = Math.max(0, yMin - yPad), yHi = yMax + yPad;
   const sx = x => padL + ((x - xMin) / (xMax - xMin || 1)) * (W - padL - padR);
   const sy = y => H - padB - ((y - yLo) / (yHi - yLo || 1)) * (H - padT - padB);
-  const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${sx(d.x.getTime()).toFixed(1)} ${sy(d.y).toFixed(1)}`).join(' ');
-  const dots = data.map(d => `<circle cx="${sx(d.x.getTime()).toFixed(1)}" cy="${sy(d.y).toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
+  const path = series.map((d, i) => `${i === 0 ? 'M' : 'L'} ${sx(d.x.getTime()).toFixed(1)} ${sy(d.y).toFixed(1)}`).join(' ');
+  let dots = '';
+  if (options.highlightExtremes) {
+    const minPoint = source.reduce((best, point) => point.y < best.y ? point : best, source[0]);
+    const maxPoint = source.reduce((best, point) => point.y > best.y ? point : best, source[0]);
+    const lastPoint = source[source.length - 1];
+    const highlights = new Map();
+    [minPoint, maxPoint, lastPoint].forEach(point => highlights.set(chartPointKey(point), point));
+    dots = Array.from(highlights.values()).map(point => {
+      const isLast = chartPointKey(point) === chartPointKey(lastPoint);
+      return `<circle cx="${sx(point.x.getTime()).toFixed(1)}" cy="${sy(point.y).toFixed(1)}" r="${isLast ? 4.3 : 3.8}" fill="${color}" stroke="#120d0a" stroke-width="2"/>`;
+    }).join('');
+  } else {
+    dots = series.map(d => `<circle cx="${sx(d.x.getTime()).toFixed(1)}" cy="${sy(d.y).toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
+  }
   const yTicks = `<text x="4" y="${(sy(yHi) + 4).toFixed(1)}" fill="#666" font-size="10">${yHi.toFixed(0)}</text><text x="4" y="${sy(yLo).toFixed(1)}" fill="#666" font-size="10">${yLo.toFixed(0)}</text>`;
   const dateFmt = (d) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   const xTicks = `<text x="${padL}" y="${H - 6}" fill="#666" font-size="10">${dateFmt(xMin)}</text><text x="${W - padR}" y="${H - 6}" text-anchor="end" fill="#666" font-size="10">${dateFmt(xMax)}</text>`;
   const yMid = (yLo + yHi) / 2;
   const grid = `<line x1="${padL}" y1="${sy(yMid).toFixed(1)}" x2="${W - padR}" y2="${sy(yMid).toFixed(1)}" stroke="#222" stroke-dasharray="2,3"/>`;
   const goalLine = goal != null ? `<line x1="${padL}" y1="${sy(goal).toFixed(1)}" x2="${W - padR}" y2="${sy(goal).toFixed(1)}" stroke="#ffc107" stroke-width="1.5" stroke-dasharray="4,3"/><text x="${W - padR}" y="${(sy(goal) - 4).toFixed(1)}" text-anchor="end" fill="#ffc107" font-size="10">цель ${goal}</text>` : '';
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${grid}${goalLine}${yTicks}${xTicks}<path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>${dots}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${grid}${goalLine}${yTicks}${xTicks}<path d="${path}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg>`;
 }
 
 // ===== MEASURE =====
@@ -2814,6 +2909,8 @@ function renderMeasures() {
 function renderHealth() {
   renderHealthImportStatus();
   renderHealthOverview();
+  renderHealthSleep();
+  renderHealthBody();
   renderHealthCharts();
   renderHealthWorkouts();
 }
@@ -2839,6 +2936,7 @@ function renderHealthOverview() {
   }
   const recovery = getLatestHealthWith(['sleep_asleep_min', 'hrv_sdnn_ms', 'resting_hr_bpm', 'vo2max']);
   const activity = getLatestHealthWith(['steps', 'distance_km', 'active_energy_kcal', 'exercise_minutes', 'workouts_count']);
+  const body = getLatestHealthWith(['body_mass_kg', 'body_fat_pct', 'lean_body_mass_kg', 'body_mass_index']);
   const recoveryDate = recovery ? new Date(recovery.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—';
   const activityDate = activity ? new Date(activity.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—';
   const recoveryAge = recovery ? daysBetween(recovery.date, new Date()) : null;
@@ -2856,73 +2954,215 @@ function renderHealthOverview() {
       <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'distance_km', 'км')}</div><div class="stat-lbl">Дистанция</div></div>
       <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'active_energy_kcal', 'ккал')}</div><div class="stat-lbl">Активные</div></div>
       <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'exercise_minutes', 'мин')}</div><div class="stat-lbl">Exercise</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(body, 'body_mass_kg', 'кг')}</div><div class="stat-lbl">Вес Health</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(body, 'body_fat_pct', '%')}</div><div class="stat-lbl">Жир</div></div>
     </div>
     <div class="support-note">Восстановление: ${recoveryDate}. Активность: ${activityDate}. ${note}</div>`;
+}
+function renderHealthSleep() {
+  const box = document.getElementById('health-sleep');
+  if (!box) return;
+  const sleep = getLatestHealthWith(['sleep_asleep_min', 'sleep_in_bed_min', 'sleep_awake_min', 'sleep_rem_min', 'sleep_deep_min', 'sleep_core_min']);
+  if (!sleep) {
+    box.innerHTML = '<div class="empty-state">В Apple Health пока нет данных сна.</div>';
+    return;
+  }
+  const date = new Date(sleep.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const asleep = sleep.sleep_asleep_min || 0;
+  const phases = [
+    { key: 'sleep_deep_min', label: 'Глубокий', color: '#4a9eff' },
+    { key: 'sleep_rem_min', label: 'REM', color: '#a68bff' },
+    { key: 'sleep_core_min', label: 'Core', color: '#5fcf6f' },
+    { key: 'sleep_awake_min', label: 'Пробуждения', color: '#ff7eb6' }
+  ];
+  const bar = phases.map(p => {
+    const min = sleep[p.key] || 0;
+    const width = asleep ? Math.max(3, min / Math.max(asleep + (sleep.sleep_awake_min || 0), 1) * 100) : 0;
+    return min ? `<div title="${p.label}: ${round1(min / 60)} ч" style="width:${width}%;background:${p.color};height:10px;"></div>` : '';
+  }).join('');
+  const rows = [
+    ['Всего сна', formatHealthValue(sleep, 'sleep_asleep_min', 'ч', v => round1(v / 60))],
+    ['В кровати', formatHealthValue(sleep, 'sleep_in_bed_min', 'ч', v => round1(v / 60))],
+    ['Эффективность', formatHealthValue(sleep, 'sleep_efficiency_pct', '%')],
+    ['Пробуждения', `${formatHealthValue(sleep, 'sleep_awake_min', 'мин')} · ${sleep.sleep_awake_count || 0} раз`],
+    ['REM', `${formatHealthValue(sleep, 'sleep_rem_min', 'ч', v => round1(v / 60))} · ${formatHealthValue(sleep, 'sleep_rem_pct', '%')}`],
+    ['Глубокий', `${formatHealthValue(sleep, 'sleep_deep_min', 'ч', v => round1(v / 60))} · ${formatHealthValue(sleep, 'sleep_deep_pct', '%')}`],
+    ['Core', `${formatHealthValue(sleep, 'sleep_core_min', 'ч', v => round1(v / 60))} · ${formatHealthValue(sleep, 'sleep_core_pct', '%')}`]
+  ].map(([label, value]) => `<div class="ideal-row"><span>${label}</span><b>${value}</b></div>`).join('');
+  box.innerHTML = `<div class="chart-card">
+    <div class="chart-title">${date}</div>
+    <div class="chart-subtitle">Последняя ночь с данными Apple Watch</div>
+    <div style="display:flex;overflow:hidden;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-soft);margin-bottom:12px;">${bar}</div>
+    <div class="ideal-goals">${rows}</div>
+  </div>`;
+}
+function renderHealthBody() {
+  const box = document.getElementById('health-body');
+  if (!box) return;
+  const body = getLatestHealthWith(['body_mass_kg', 'body_fat_pct', 'lean_body_mass_kg', 'body_mass_index', 'waist_cm']);
+  if (!body) {
+    box.innerHTML = '<div class="empty-state">В Apple Health пока нет данных состава тела.</div>';
+    return;
+  }
+  const date = new Date(body.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const sourceFor = key => body.health_sources && body.health_sources[key] ? ` · ${escapeHTML(body.health_sources[key])}` : '';
+  const rows = [
+    ['Вес', `${formatHealthValue(body, 'body_mass_kg', 'кг')}${sourceFor('body_mass_kg')}`],
+    ['Жир', `${formatHealthValue(body, 'body_fat_pct', '%')}${sourceFor('body_fat_pct')}`],
+    ['Безжировая масса', `${formatHealthValue(body, 'lean_body_mass_kg', 'кг')}${sourceFor('lean_body_mass_kg')}`],
+    ['BMI', `${formatHealthValue(body, 'body_mass_index')}${sourceFor('body_mass_index')}`],
+    ['Талия', `${formatHealthValue(body, 'waist_cm', 'см')}${sourceFor('waist_cm')}`]
+  ].map(([label, value]) => `<div class="ideal-row"><span>${label}</span><b>${value}</b></div>`).join('');
+  box.innerHTML = `<div class="chart-card">
+    <div class="chart-title">${date}</div>
+    <div class="chart-subtitle">Последняя запись состава тела из Apple Health</div>
+    <div class="ideal-goals">${rows}</div>
+  </div>`;
+}
+function getHealthChartRange() {
+  const range = localStorage.getItem('health_chart_range');
+  return ['week', 'month', 'all'].includes(range) ? range : 'month';
+}
+function setHealthChartRange(range) {
+  if (!['week', 'month', 'all'].includes(range)) return;
+  localStorage.setItem('health_chart_range', range);
+  renderHealthCharts();
+}
+function renderHealthRangeTabs(active) {
+  const tabs = [
+    ['week', '1 неделя'],
+    ['month', '1 месяц'],
+    ['all', 'все время']
+  ];
+  return `<div class="health-range">${tabs.map(([key, label]) => (
+    `<button type="button" class="${active === key ? 'active' : ''}" onclick="setHealthChartRange('${key}')">${label}</button>`
+  )).join('')}</div>`;
+}
+function filterHealthPointsByRange(points, range) {
+  const sorted = points.slice().sort((a, b) => a.x - b.x);
+  if (range === 'all' || sorted.length < 2) return sorted;
+  const days = range === 'week' ? 7 : 31;
+  const last = sorted[sorted.length - 1].x.getTime();
+  const start = last - (days - 1) * 86400000;
+  return sorted.filter(point => point.x.getTime() >= start);
 }
 function renderHealthCharts() {
   const container = document.getElementById('health-charts');
   if (!container) return;
-  const rows = getHealthDaily();
+  const rows = getHealthDaily().slice().sort((a, b) => new Date(a.date) - new Date(b.date));
   if (rows.length < 2) {
     container.innerHTML = '<div class="empty-state">Импортируй Apple Health export.zip, чтобы появились графики часов.</div>';
     return;
   }
+  const range = getHealthChartRange();
   const fields = [
-    { key: 'sleep_asleep_min', label: 'Сон', unit: 'ч', color: '#8f8f8f', map: v => round1(v / 60) },
-    { key: 'hrv_sdnn_ms', label: 'HRV SDNN', unit: 'мс', color: '#5fcf6f' },
-    { key: 'resting_hr_bpm', label: 'Пульс покоя', unit: 'уд/мин', color: '#ff7eb6' },
-    { key: 'avg_hr_bpm', label: 'Средний пульс', unit: 'уд/мин', color: '#ff6b00' },
-    { key: 'walking_hr_bpm', label: 'Walking HR', unit: 'уд/мин', color: '#ffc857' },
-    { key: 'vo2max', label: 'VO2 max', unit: '', color: '#9bdc65' },
-    { key: 'respiratory_rate_bpm', label: 'Дыхание', unit: '/мин', color: '#a68bff' },
-    { key: 'oxygen_saturation_pct', label: 'SpO2', unit: '%', color: '#4a9eff' },
-    { key: 'steps', label: 'Шаги', unit: '', color: '#4a9eff' },
-    { key: 'distance_km', label: 'Дистанция', unit: 'км', color: '#5fcf6f' },
-    { key: 'active_energy_kcal', label: 'Активные калории', unit: 'ккал', color: '#ff9f43' }
-    ,{ key: 'basal_energy_kcal', label: 'Базовые калории', unit: 'ккал', color: '#c878ff' }
-    ,{ key: 'exercise_minutes', label: 'Exercise time', unit: 'мин', color: '#ff7eb6' }
-    ,{ key: 'stand_minutes', label: 'Stand time', unit: 'мин', color: '#8f8f8f' }
-    ,{ key: 'workout_minutes', label: 'Тренировки', unit: 'мин', color: '#ff6b00' }
+    { key: 'sleep_asleep_min', label: 'Сон', desc: 'Сколько часов реально спал за ночь.', unit: 'ч', color: '#8f8f8f', map: v => round1(v / 60) },
+    { key: 'sleep_in_bed_min', label: 'В кровати', desc: 'Время от отбоя до подъема, включая пробуждения.', unit: 'ч', color: '#c878ff', map: v => round1(v / 60) },
+    { key: 'sleep_awake_min', label: 'Пробуждения', desc: 'Минуты бодрствования внутри сна.', unit: 'мин', color: '#ff7eb6' },
+    { key: 'sleep_efficiency_pct', label: 'Эффективность сна', desc: 'Доля сна от общего времени в кровати.', unit: '%', color: '#5fcf6f' },
+    { key: 'sleep_deep_min', label: 'Глубокий сон', desc: 'Фаза, которую обычно связывают с физическим восстановлением.', unit: 'ч', color: '#4a9eff', map: v => round1(v / 60) },
+    { key: 'sleep_rem_min', label: 'REM сон', desc: 'Фаза, важная для нервной системы, памяти и эмоций.', unit: 'ч', color: '#a68bff', map: v => round1(v / 60) },
+    { key: 'sleep_core_min', label: 'Core сон', desc: 'Базовая фаза сна, которая обычно занимает большую часть ночи.', unit: 'ч', color: '#9bdc65', map: v => round1(v / 60) },
+    { key: 'hrv_sdnn_ms', label: 'HRV SDNN', desc: 'Маркер восстановления нервной системы: смотреть лучше в динамике.', unit: 'мс', color: '#5fcf6f' },
+    { key: 'resting_hr_bpm', label: 'Пульс покоя', desc: 'Низкий относительно твоей нормы часто говорит о лучшем восстановлении.', unit: 'уд/мин', color: '#ff7eb6' },
+    { key: 'avg_hr_bpm', label: 'Средний пульс', desc: 'Общий дневной фон нагрузки и восстановления.', unit: 'уд/мин', color: '#ff6b00' },
+    { key: 'walking_hr_bpm', label: 'Walking HR', desc: 'Пульс при ходьбе: полезен как спокойный индикатор формы.', unit: 'уд/мин', color: '#ffc857' },
+    { key: 'vo2max', label: 'VO2 max', desc: 'Оценка кардио-формы Apple Health.', unit: '', color: '#9bdc65' },
+    { key: 'respiratory_rate_bpm', label: 'Дыхание', desc: 'Частота дыхания во сне или за день, если часы ее записали.', unit: '/мин', color: '#a68bff' },
+    { key: 'oxygen_saturation_pct', label: 'SpO2', desc: 'Насыщение крови кислородом, полезно смотреть на редкие провалы.', unit: '%', color: '#4a9eff' },
+    { key: 'steps', label: 'Шаги', desc: 'Общий объем бытовой активности.', unit: '', color: '#4a9eff' },
+    { key: 'distance_km', label: 'Дистанция', desc: 'Сколько километров набрал за день.', unit: 'км', color: '#5fcf6f' },
+    { key: 'active_energy_kcal', label: 'Активные калории', desc: 'Энергия активного движения без базового обмена.', unit: 'ккал', color: '#ff9f43' },
+    { key: 'basal_energy_kcal', label: 'Базовые калории', desc: 'Оценка энергии, которую тело тратит в покое.', unit: 'ккал', color: '#c878ff' },
+    { key: 'exercise_minutes', label: 'Exercise time', desc: 'Минуты активности, которые Apple засчитала как упражнение.', unit: 'мин', color: '#ff7eb6' },
+    { key: 'stand_minutes', label: 'Stand time', desc: 'Минуты стояния и легкой активности по данным Apple.', unit: 'мин', color: '#8f8f8f' },
+    { key: 'workout_minutes', label: 'Тренировки', desc: 'Длительность тренировок, записанных часами.', unit: 'мин', color: '#ff6b00' },
+    { key: 'body_mass_kg', label: 'Вес из Health', desc: 'Вес из Apple Health или подключенных весов.', unit: 'кг', color: '#ffc857' },
+    { key: 'body_fat_pct', label: 'Жир из Health', desc: 'Процент жира, если его передали умные весы.', unit: '%', color: '#ff7eb6' },
+    { key: 'lean_body_mass_kg', label: 'Безжировая масса', desc: 'Масса тела без жира по данным весов/Health.', unit: 'кг', color: '#5fcf6f' },
+    { key: 'body_mass_index', label: 'BMI', desc: 'Индекс массы тела из Apple Health.', unit: '', color: '#a68bff' }
   ];
-  container.innerHTML = fields.map(f => {
-    const pts = rows
+  const cards = fields.map(f => {
+    const allPts = rows
       .filter(r => r[f.key] != null)
       .map(r => ({ x: new Date(r.date), y: f.map ? f.map(r[f.key]) : r[f.key] }));
+    const pts = filterHealthPointsByRange(allPts, range);
     if (pts.length < 2) return '';
     const first = pts[0].y, last = pts[pts.length - 1].y;
     const delta = round1(last - first);
+    const unit = f.unit ? ` ${f.unit}` : '';
     return `<div class="chart-card">
       <div class="chart-title">${f.label}</div>
+      <div class="chart-subtitle">${f.desc}</div>
       <div class="chart-stats">
-        <div><span class="chart-stat-label">Последнее:</span> <span class="chart-stat-value">${last} ${f.unit}</span></div>
-        <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${delta >= 0 ? '+' : ''}${delta} ${f.unit}</span></div>
+        <div><span class="chart-stat-label">Последнее:</span> <span class="chart-stat-value">${last}${unit}</span></div>
+        <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${delta >= 0 ? '+' : ''}${delta}${unit}</span></div>
       </div>
-      ${renderLineChart(pts, f.color)}
+      ${renderLineChart(pts, f.color, null, { reducePoints: true, maxPoints: 72, highlightExtremes: true })}
     </div>`;
   }).filter(Boolean).join('') || '<div class="empty-state">В Apple Health пока мало точек для графиков восстановления.</div>';
+  container.innerHTML = `${renderHealthRangeTabs(range)}${cards}`;
 }
 function renderHealthWorkouts() {
   const container = document.getElementById('health-workouts');
   if (!container) return;
-  const rows = getHealthDaily().filter(r => r.workouts_count || r.workout_minutes).slice(-24).reverse();
+  const rows = getHealthDaily()
+    .filter(r => r.workouts_count || r.workout_minutes)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
   if (!rows.length) {
     container.innerHTML = '<div class="empty-state">В экспорте Apple Health нет тренировок Apple Watch.</div>';
     return;
   }
-  container.innerHTML = rows.map(row => {
-    const date = new Date(row.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    const types = row.workout_types
-      ? Object.entries(row.workout_types).map(([name, count]) => `${name}${count > 1 ? ` ×${count}` : ''}`).join(', ')
-      : '';
-    return `<div class="chart-card">
-      <div class="chart-title">${date}</div>
-      <div class="chart-stats">
-        <div><span class="chart-stat-label">Тренировки:</span> <span class="chart-stat-value">${row.workouts_count || 0}</span></div>
-        <div><span class="chart-stat-label">Минуты:</span> <span class="chart-stat-value">${row.workout_minutes || 0}</span></div>
-        ${row.workout_energy_kcal ? `<div><span class="chart-stat-label">Ккал:</span> <span class="chart-stat-value">${row.workout_energy_kcal}</span></div>` : ''}
+  const groups = new Map();
+  rows.forEach(row => {
+    const key = String(row.date).slice(0, 7);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+  container.innerHTML = Array.from(groups.entries()).map(([monthKey, monthRows]) => {
+    const monthDate = new Date(`${monthKey}-01T12:00:00`);
+    const monthLabel = monthDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+    const totalCount = monthRows.reduce((sum, row) => sum + (row.workouts_count || 0), 0);
+    const totalMinutes = round1(monthRows.reduce((sum, row) => sum + (row.workout_minutes || 0), 0));
+    const totalEnergy = round1(monthRows.reduce((sum, row) => sum + (row.workout_energy_kcal || 0), 0));
+    const workouts = monthRows.map(row => {
+      const date = new Date(row.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+      const types = row.workout_types
+        ? Object.entries(row.workout_types)
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => `${name}${count > 1 ? ` ×${count}` : ''}`)
+          .join(', ')
+        : '';
+      return `<details class="health-workout-item">
+        <summary>
+          <div>
+            <div class="history-summary-title">${date}</div>
+            <div class="history-summary-sub">${row.workouts_count || 0} трен. · ${row.workout_minutes || 0} мин.${row.workout_energy_kcal ? ` · ${row.workout_energy_kcal} ккал` : ''}</div>
+          </div>
+          <div class="health-workout-chevron">›</div>
+        </summary>
+        <div class="health-workout-detail">
+          <div class="chart-stats">
+            <div><span class="chart-stat-label">Тренировки:</span> <span class="chart-stat-value">${row.workouts_count || 0}</span></div>
+            <div><span class="chart-stat-label">Минуты:</span> <span class="chart-stat-value">${row.workout_minutes || 0}</span></div>
+            ${row.workout_energy_kcal ? `<div><span class="chart-stat-label">Ккал:</span> <span class="chart-stat-value">${row.workout_energy_kcal}</span></div>` : ''}
+          </div>
+          ${types ? `<div class="chart-subtitle">${escapeHTML(types)}</div>` : '<div class="chart-subtitle">Типы тренировок не указаны в экспорте.</div>'}
+        </div>
+      </details>`;
+    }).join('');
+    return `<details class="history-day health-workout-month">
+      <summary>
+        <div>
+          <div class="history-summary-title">${monthLabel}</div>
+          <div class="history-summary-sub">${totalCount} трен. · ${totalMinutes} мин.${totalEnergy ? ` · ${totalEnergy} ккал` : ''}</div>
+        </div>
+        <div class="history-chevron">›</div>
+      </summary>
+      <div class="history-details">
+        ${workouts}
       </div>
-      ${types ? `<div class="chart-subtitle">${escapeHTML(types)}</div>` : ''}
-    </div>`;
+    </details>`;
   }).join('');
 }
 
@@ -2942,6 +3182,11 @@ const HEALTH_TYPES = {
   exerciseTime: 'HKQuantityTypeIdentifierAppleExerciseTime',
   standTime: 'HKQuantityTypeIdentifierAppleStandTime',
   flightsClimbed: 'HKQuantityTypeIdentifierFlightsClimbed',
+  bodyMass: 'HKQuantityTypeIdentifierBodyMass',
+  bodyFat: 'HKQuantityTypeIdentifierBodyFatPercentage',
+  leanBodyMass: 'HKQuantityTypeIdentifierLeanBodyMass',
+  bodyMassIndex: 'HKQuantityTypeIdentifierBodyMassIndex',
+  waistCircumference: 'HKQuantityTypeIdentifierWaistCircumference',
   sleep: 'HKCategoryTypeIdentifierSleepAnalysis'
 };
 function setHealthStatus(text) {
@@ -3018,6 +3263,14 @@ function convertPercentValue(value) {
   if (n == null) return null;
   return n <= 1 ? n * 100 : n;
 }
+function convertLengthToCm(value, unit) {
+  const n = normalizeNumber(value);
+  if (n == null) return null;
+  const u = String(unit || '').toLowerCase();
+  if (u === 'm' || u === 'meter' || u === 'meters') return n * 100;
+  if (u === 'in' || u === 'inch' || u === 'inches') return n * 2.54;
+  return n;
+}
 function createHealthAggregator() {
   const days = new Map();
   const stats = { records: 0, usedRecords: 0, workouts: 0 };
@@ -3037,6 +3290,11 @@ function createHealthAggregator() {
   };
   return {
     stats,
+    rememberSource(d, key, source) {
+      if (!d || !source) return;
+      if (!d.health_sources) d.health_sources = {};
+      d.health_sources[key] = source;
+    },
     addRecord(attrs) {
       stats.records++;
       const type = attrs.type;
@@ -3048,6 +3306,10 @@ function createHealthAggregator() {
         const min = minutesBetween(attrs.startDate, attrs.endDate);
         const state = attrs.value || '';
         if (state.includes('InBed')) addSum(d, 'sleep_in_bed_min', min);
+        if (state.includes('Awake')) {
+          addSum(d, 'sleep_awake_min', min);
+          d.sleep_awake_count = (d.sleep_awake_count || 0) + 1;
+        }
         if (state.includes('Asleep')) addSum(d, 'sleep_asleep_min', min);
         if (state.includes('AsleepREM')) addSum(d, 'sleep_rem_min', min);
         if (state.includes('AsleepDeep')) addSum(d, 'sleep_deep_min', min);
@@ -3069,6 +3331,11 @@ function createHealthAggregator() {
       if (type === HEALTH_TYPES.exerciseTime) addSum(d, 'exercise_minutes', value);
       if (type === HEALTH_TYPES.standTime) addSum(d, 'stand_minutes', value);
       if (type === HEALTH_TYPES.flightsClimbed) addSum(d, 'flights_climbed', value);
+      if (type === HEALTH_TYPES.bodyMass) { addAvg(d, 'body_mass_kg', convertHealthValue(attrs.value, attrs.unit)); this.rememberSource(d, 'body_mass_kg', attrs.sourceName); }
+      if (type === HEALTH_TYPES.bodyFat) { addAvg(d, 'body_fat_pct', convertPercentValue(attrs.value)); this.rememberSource(d, 'body_fat_pct', attrs.sourceName); }
+      if (type === HEALTH_TYPES.leanBodyMass) { addAvg(d, 'lean_body_mass_kg', convertHealthValue(attrs.value, attrs.unit)); this.rememberSource(d, 'lean_body_mass_kg', attrs.sourceName); }
+      if (type === HEALTH_TYPES.bodyMassIndex) { addAvg(d, 'body_mass_index', value); this.rememberSource(d, 'body_mass_index', attrs.sourceName); }
+      if (type === HEALTH_TYPES.waistCircumference) { addAvg(d, 'waist_cm', convertLengthToCm(attrs.value, attrs.unit)); this.rememberSource(d, 'waist_cm', attrs.sourceName); }
     },
     addWorkout(attrs) {
       stats.workouts++;
@@ -3091,15 +3358,21 @@ function createHealthAggregator() {
     finalize() {
       const rows = Array.from(days.values()).sort((a, b) => a.date.localeCompare(b.date));
       rows.forEach(d => {
-        ['avg_hr_bpm', 'resting_hr_bpm', 'walking_hr_bpm', 'hrv_sdnn_ms', 'vo2max', 'respiratory_rate_bpm', 'oxygen_saturation_pct'].forEach(key => {
+        ['avg_hr_bpm', 'resting_hr_bpm', 'walking_hr_bpm', 'hrv_sdnn_ms', 'vo2max', 'respiratory_rate_bpm', 'oxygen_saturation_pct', 'body_mass_kg', 'body_fat_pct', 'lean_body_mass_kg', 'body_mass_index', 'waist_cm'].forEach(key => {
           const count = d[`_${key}_count`] || 0;
           if (count) d[key] = round1(d[`_${key}_sum`] / count);
           delete d[`_${key}_sum`];
           delete d[`_${key}_count`];
         });
-        ['steps', 'distance_km', 'active_energy_kcal', 'basal_energy_kcal', 'exercise_minutes', 'stand_minutes', 'flights_climbed', 'sleep_in_bed_min', 'sleep_asleep_min', 'sleep_rem_min', 'sleep_deep_min', 'sleep_core_min', 'workout_minutes', 'workout_energy_kcal'].forEach(key => {
+        ['steps', 'distance_km', 'active_energy_kcal', 'basal_energy_kcal', 'exercise_minutes', 'stand_minutes', 'flights_climbed', 'sleep_in_bed_min', 'sleep_asleep_min', 'sleep_awake_min', 'sleep_rem_min', 'sleep_deep_min', 'sleep_core_min', 'workout_minutes', 'workout_energy_kcal'].forEach(key => {
           if (d[key] != null) d[key] = round1(d[key]);
         });
+        if (d.sleep_asleep_min && d.sleep_in_bed_min) d.sleep_efficiency_pct = round1(d.sleep_asleep_min / d.sleep_in_bed_min * 100);
+        if (d.sleep_asleep_min) {
+          if (d.sleep_rem_min) d.sleep_rem_pct = round1(d.sleep_rem_min / d.sleep_asleep_min * 100);
+          if (d.sleep_deep_min) d.sleep_deep_pct = round1(d.sleep_deep_min / d.sleep_asleep_min * 100);
+          if (d.sleep_core_min) d.sleep_core_pct = round1(d.sleep_core_min / d.sleep_asleep_min * 100);
+        }
       });
       return rows;
     }
