@@ -72,7 +72,7 @@
   /* ============ NAV — bottom tab bar ============ */
   .nav {
     position: fixed; left: 0; right: 0; bottom: 0;
-    display: grid; grid-template-columns: repeat(6, 1fr);
+    display: grid; grid-template-columns: repeat(7, 1fr);
     gap: 2px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     background: oklch(0.135 0.006 50 / 0.85);
     backdrop-filter: blur(18px) saturate(140%);
@@ -83,12 +83,12 @@
   .nav-btn {
     appearance: none; background: transparent; border: 0; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    padding: 8px 2px 6px; border-radius: 12px;
-    color: var(--fg-3); font-family: var(--sans); font-size: 10px; font-weight: 600;
+    padding: 8px 1px 6px; border-radius: 12px;
+    color: var(--fg-3); font-family: var(--sans); font-size: 9px; font-weight: 600;
     letter-spacing: 0.01em;
     transition: color .15s, background .15s;
   }
-  .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
+  .nav-btn svg { width: 20px; height: 20px; stroke-width: 1.8; }
   .nav-btn.active { color: var(--ember); }
   .nav-btn.active svg { stroke: var(--ember); }
   .nav-btn:active { background: var(--surface); }
@@ -504,6 +504,11 @@
     padding: 10px 12px; background: var(--bg-soft);
     border: 1px solid var(--line-soft); border-radius: 10px;
   }
+  .health-meta {
+    margin-top: 8px; color: var(--fg-3);
+    font-family: var(--num); font-size: 11px; line-height: 1.5;
+  }
+  .health-meta b { color: var(--fg); font-weight: 700; }
 
   /* ============ WORKOUT NOTE ============ */
   .workout-note-section {
@@ -916,6 +921,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>
     <span>Замеры</span>
   </button>
+  <button class="nav-btn" data-screen="health" aria-label="Часы">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="5" width="10" height="14" rx="4"/><path d="M9 5V3h6v2M9 19v2h6v-2M10 12h4"/></svg>
+    <span>Часы</span>
+  </button>
   <button class="nav-btn" data-screen="history" aria-label="История">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     <span>История</span>
@@ -1017,6 +1026,24 @@
   <div id="measure-charts"></div>
 </div>
 
+<!-- HEALTH -->
+<div class="screen" id="screen-health">
+  <h1>Часы</h1>
+  <div class="subtitle">Apple Watch / Apple Health</div>
+  <div class="measure-form">
+    <h3 style="font-size: 14px; margin-bottom: 12px;">Импорт</h3>
+    <div class="info-box">Загрузи файл экспорта из Здоровья: можно сразу <b>export.zip</b>, приложение само найдет внутри XML и возьмет метрики часов.</div>
+    <input class="file-input" type="file" id="health-import-file" accept=".zip,.xml,application/zip,application/xml,text/xml" onchange="importAppleHealthFile(this.files[0]); this.value='';">
+    <button class="btn-secondary" onclick="document.getElementById('health-import-file').click()">⌚ Импорт Apple Health ZIP/XML</button>
+    <div class="support-note" id="health-import-status"></div>
+  </div>
+  <div id="health-overview"></div>
+  <h2>Графики</h2>
+  <div id="health-charts"></div>
+  <h2>Тренировки Apple Watch</h2>
+  <div id="health-workouts"></div>
+</div>
+
 <!-- HISTORY -->
 <div class="screen" id="screen-history">
   <h1>История</h1>
@@ -1055,10 +1082,11 @@
   
   <h2>Резервная копия</h2>
   <div class="info-box">Один формат для всего: тренировки, замеры, цели, настройки и программа. Скачай файл, чтобы потом восстановить данные на этом или другом телефоне.</div>
-  <button class="btn-secondary" onclick="downloadData()">⬇️ Скачать резервную копию</button>
+  <button class="btn-secondary" onclick="downloadData()">⬇️ Скачать JSON-бэкап</button>
   <input class="file-input" type="file" id="import-data-file" accept=".json,application/json" onchange="importDataFile(this.files[0]); this.value='';">
-  <button class="btn-secondary" onclick="document.getElementById('import-data-file').click()">⬆️ Восстановить из копии</button>
-  
+  <button class="btn-secondary" onclick="document.getElementById('import-data-file').click()">⬆️ Восстановить JSON-бэкап</button>
+  <button class="btn-secondary" onclick="downloadAIExport()">🧠 Скачать данные для нейронки</button>
+
   <h2 style="color: #c33;">Опасная зона</h2>
   <button class="btn-secondary" style="border-color:#5a1a1a;color:#c33;" onclick="resetAll()">🗑 Удалить все данные</button>
 </div>
@@ -1183,6 +1211,10 @@ function getHistory() { return readJSON('workout_history', []); }
 function saveHistory(h) { localStorage.setItem('workout_history', JSON.stringify(h)); }
 function getMeasures() { return readJSON('measures', []); }
 function saveMeasures(m) { localStorage.setItem('measures', JSON.stringify(m)); }
+function getHealthDaily() { return readJSON('apple_health_daily', []); }
+function saveHealthDaily(rows) { localStorage.setItem('apple_health_daily', JSON.stringify(rows)); }
+function getHealthImportMeta() { return readJSON('apple_health_import', null); }
+function saveHealthImportMeta(meta) { localStorage.setItem('apple_health_import', JSON.stringify(meta)); }
 function getGoals() { return readJSON('goals', {}); }
 function saveGoals(g) { localStorage.setItem('goals', JSON.stringify(g)); }
 function getProgram() {
@@ -1220,19 +1252,67 @@ function hasWorkoutInput(workout = currentWorkout) {
 }
 
 // ===== HELPERS =====
-function getLastExerciseData(exerciseName) {
-  const history = getHistory();
-  for (let i = history.length - 1; i >= 0; i--) {
-    const ex = history[i].exercises.find(e => e.name === exerciseName);
-    if (ex && ex.sets.some(setHasLiftData)) return ex;
-  }
-  return null;
+function normalizeExerciseName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function getExerciseDefNames(ex) {
+  return [ex && ex.name, ...((ex && Array.isArray(ex.aliases)) ? ex.aliases : [])]
+    .map(n => String(n || '').trim())
+    .filter(Boolean);
+}
+function exerciseNameMatchesDef(name, ex) {
+  const key = normalizeExerciseName(name);
+  return !!key && getExerciseDefNames(ex).some(n => normalizeExerciseName(n) === key);
 }
 function getProgramExerciseDef(exerciseName) {
   const program = getProgram();
-  for (const dayKey of Object.keys(program.days)) {
-    const found = program.days[dayKey].exercises.find(e => e.name === exerciseName);
+  for (const dayKey of Object.keys(program.days || {})) {
+    const found = (program.days[dayKey].exercises || []).find(e => exerciseNameMatchesDef(exerciseName, e));
     if (found) return found;
+  }
+  return null;
+}
+function getExerciseMatchKeys(exerciseName) {
+  const names = [exerciseName];
+  const def = getProgramExerciseDef(exerciseName);
+  if (def) names.push(...getExerciseDefNames(def));
+  return new Set(names.map(normalizeExerciseName).filter(Boolean));
+}
+function exerciseNameMatches(targetName, candidateName) {
+  const candidate = normalizeExerciseName(candidateName);
+  return !!candidate && getExerciseMatchKeys(targetName).has(candidate);
+}
+function getExerciseIdentityKey(exerciseName) {
+  const def = getProgramExerciseDef(exerciseName);
+  return normalizeExerciseName(def ? def.name : exerciseName);
+}
+function parseNameList(value) {
+  return String(value || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+function cleanExerciseAliases(aliases, currentName) {
+  const currentKey = normalizeExerciseName(currentName);
+  const seen = new Set();
+  return parseNameList(Array.isArray(aliases) ? aliases.join(',') : aliases)
+    .filter(name => {
+      const key = normalizeExerciseName(name);
+      if (!key || key === currentKey || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+function getLastExerciseData(exerciseName) {
+  const history = getHistory();
+  for (let i = history.length - 1; i >= 0; i--) {
+    const ex = history[i].exercises.find(e => exerciseNameMatches(exerciseName, e.name));
+    if (ex && ex.sets.some(setHasLiftData)) return ex;
   }
   return null;
 }
@@ -1268,6 +1348,12 @@ function addDays(dateValue, days) {
   const d = new Date(dateValue);
   d.setDate(d.getDate() + days);
   return d;
+}
+function daysBetween(a, b) {
+  const da = new Date(a), db = new Date(b);
+  da.setHours(0, 0, 0, 0);
+  db.setHours(0, 0, 0, 0);
+  return Math.floor((db - da) / 86400000);
 }
 function maxDate(...dates) {
   return dates.reduce((best, date) => {
@@ -1354,12 +1440,6 @@ function formatSetForHistory(set) {
   if (!dropSetHasData(set)) return main;
   return `${main} ↓ ${set.drop.weight || '?'}×${set.drop.reps || '?'}`;
 }
-function formatSetForExport(set) {
-  if (!set.weight && !set.reps && dropSetHasData(set)) return `дроп ${set.drop.weight || '?'} кг × ${set.drop.reps || '?'}`;
-  const main = `${set.weight || '?'} кг × ${set.reps || '?'}${set.rir ? ` (RIR ${set.rir})` : ''}`;
-  if (!dropSetHasData(set)) return main;
-  return `${main} + дроп ${set.drop.weight || '?'} кг × ${set.drop.reps || '?'}`;
-}
 function getCurrentWeek() {
   const start = new Date(getStartDate());
   const now = new Date();
@@ -1414,7 +1494,7 @@ function isPR(exerciseName, weight, reps) {
   const history = getHistory();
   let bestE1RM = 0;
   history.forEach(w => {
-    const ex = w.exercises.find(e => e.name === exerciseName);
+    const ex = w.exercises.find(e => exerciseNameMatches(exerciseName, e.name));
     if (!ex) return;
     ex.sets.forEach(s => {
       const wv = parseFloat(s.weight), r = parseInt(s.reps);
@@ -1520,6 +1600,7 @@ function switchToScreen(name, animate = true) {
   if (name === 'history') renderHistory();
   if (name === 'progress') initProgress();
   if (name === 'measure') renderMeasures();
+  if (name === 'health') renderHealth();
   if (name === 'settings') initSettings();
   if (animate) animateScreen(screen);
 }
@@ -1593,6 +1674,31 @@ function renderDashboardCalendar(today = new Date()) {
   const monthName = today.toLocaleDateString('ru-RU', { month: 'long' });
   return `<div class="dash-calendar-head"><h2>Календарь</h2><div class="dash-calendar-range">${monthName} до ${end.getDate()}</div></div>
     <div class="dash-calendar-scroll"><div class="dash-calendar">${days}</div></div>`;
+}
+function renderRecoverySummary() {
+  const rows = getHealthDaily();
+  if (!rows.length) return '';
+  const latestRecovery = rows.slice().reverse().find(r => r.sleep_asleep_min || r.hrv_sdnn_ms || r.resting_hr_bpm) || rows[rows.length - 1];
+  const latestActivity = rows.slice().reverse().find(r => r.steps || r.active_energy_kcal || r.exercise_minutes) || latestRecovery;
+  const age = daysBetween(latestRecovery.date, new Date());
+  const date = new Date(latestRecovery.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const activityDate = latestActivity && latestActivity.date !== latestRecovery.date
+    ? ` Активность последняя: ${new Date(latestActivity.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}.`
+    : '';
+  const ageText = age === 0 ? 'сегодня' : age === 1 ? 'вчера' : `${age} д. назад`;
+  const oldText = age > 7 ? 'Данные восстановления старые: похоже, часы давно не носились или экспорт не обновлялся.' : 'Данные восстановления свежие после последнего импорта Apple Health.';
+  const sleep = latestRecovery.sleep_asleep_min ? `${(latestRecovery.sleep_asleep_min / 60).toFixed(1)} ч` : '—';
+  const hrv = latestRecovery.hrv_sdnn_ms ? `${latestRecovery.hrv_sdnn_ms} мс` : '—';
+  const rhr = latestRecovery.resting_hr_bpm ? `${latestRecovery.resting_hr_bpm}` : '—';
+  const steps = latestActivity.steps ? Math.round(latestActivity.steps).toLocaleString('ru-RU') : '—';
+  return `<h2>Восстановление</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-val">${sleep}</div><div class="stat-lbl">Сон</div></div>
+      <div class="stat"><div class="stat-val">${hrv}</div><div class="stat-lbl">HRV</div></div>
+      <div class="stat"><div class="stat-val">${rhr}</div><div class="stat-lbl">Пульс покоя</div></div>
+      <div class="stat"><div class="stat-val">${steps}</div><div class="stat-lbl">Шаги</div></div>
+    </div>
+    <div class="support-note">Последний день восстановления: ${date} (${ageText}). ${oldText}${activityDate}</div>`;
 }
 function renderDashboard() {
   const week = getCurrentWeek();
@@ -1671,6 +1777,7 @@ function renderDashboard() {
   }
 
   html += renderDashboardCalendar(today);
+  html += renderRecoverySummary();
 
   // Stat grid
   html += `<h2>Сводка</h2>
@@ -1921,6 +2028,7 @@ function createWorkoutExercise(ex) {
   const sourceSets = getWorkingSetsFromLast(last, ex.sets);
   return {
     name: ex.name,
+    aliases: Array.isArray(ex.aliases) ? ex.aliases.slice() : [],
     target: ex.target,
     rest: ex.rest,
     note: '',
@@ -2140,7 +2248,7 @@ function openSwap(exIdx) {
   const ex = currentWorkout.exercises[exIdx];
   const program = getProgram();
   const dayExercises = program.days[currentDay].exercises;
-  const original = dayExercises.find(e => e.name === ex.name);
+  const original = dayExercises.find(e => exerciseNameMatchesDef(ex.name, e));
   const swaps = original ? original.swaps : [];
   const originalName = original ? original.name : ex.name;
   const body = document.getElementById('modal-body');
@@ -2395,16 +2503,18 @@ function getProgressExercisesForDay(dayKey) {
   const day = program.days && program.days[dayKey];
   if (day && Array.isArray(day.exercises)) {
     day.exercises.forEach(ex => {
-      if (!ex.name || seen.has(ex.name)) return;
-      seen.add(ex.name);
+      const key = getExerciseIdentityKey(ex.name);
+      if (!ex.name || seen.has(key)) return;
+      seen.add(key);
       names.push({ name: ex.name, target: ex.target || '' });
     });
   }
   getHistory().forEach(w => {
     if (w.day !== dayKey || !Array.isArray(w.exercises)) return;
     w.exercises.forEach(ex => {
-      if (!ex.name || seen.has(ex.name) || !ex.sets.some(setHasLiftData)) return;
-      seen.add(ex.name);
+      const key = getExerciseIdentityKey(ex.name);
+      if (!ex.name || seen.has(key) || !ex.sets.some(setHasLiftData)) return;
+      seen.add(key);
       names.push({ name: ex.name, target: ex.target || '' });
     });
   });
@@ -2414,7 +2524,7 @@ function getExerciseProgressPoints(exerciseName, dayKey) {
   const points = [];
   getHistory().forEach(w => {
     if (dayKey && w.day !== dayKey) return;
-    const ex = (w.exercises || []).find(e => e.name === exerciseName);
+    const ex = (w.exercises || []).find(e => exerciseNameMatches(exerciseName, e.name));
     if (!ex) return;
     const valid = ex.sets.filter(s => normalizeNumber(s.weight) != null && normalizeNumber(s.reps) != null);
     if (valid.length === 0) return;
@@ -2701,6 +2811,427 @@ function renderMeasures() {
     </div>`;
   }).filter(x => x).join('') || '<div class="empty-state">Нужно минимум 2 замера одного параметра.</div>';
 }
+function renderHealth() {
+  renderHealthImportStatus();
+  renderHealthOverview();
+  renderHealthCharts();
+  renderHealthWorkouts();
+}
+function getLatestHealthWith(keys) {
+  return getHealthDaily().slice().reverse().find(row => keys.some(key => row[key] != null)) || null;
+}
+function formatHealthValue(row, key, unit = '', transform = null) {
+  if (!row || row[key] == null) return '—';
+  const value = transform ? transform(row[key]) : row[key];
+  if (value == null || value === '') return '—';
+  const text = typeof value === 'number'
+    ? (Number.isInteger(value) ? String(value) : String(round1(value)).replace('.', ','))
+    : String(value);
+  return unit ? `${text} ${unit}` : text;
+}
+function renderHealthOverview() {
+  const box = document.getElementById('health-overview');
+  if (!box) return;
+  const rows = getHealthDaily();
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty-state">Импортируй Apple Health export.zip, чтобы увидеть данные часов.</div>';
+    return;
+  }
+  const recovery = getLatestHealthWith(['sleep_asleep_min', 'hrv_sdnn_ms', 'resting_hr_bpm', 'vo2max']);
+  const activity = getLatestHealthWith(['steps', 'distance_km', 'active_energy_kcal', 'exercise_minutes', 'workouts_count']);
+  const recoveryDate = recovery ? new Date(recovery.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—';
+  const activityDate = activity ? new Date(activity.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—';
+  const recoveryAge = recovery ? daysBetween(recovery.date, new Date()) : null;
+  const note = recoveryAge != null && recoveryAge > 7
+    ? 'Данные восстановления старые: часы, скорее всего, давно не носились ночью.'
+    : 'Данные восстановления свежие или близкие к текущим.';
+  box.innerHTML = `
+    <h2>Последнее</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-val">${formatHealthValue(recovery, 'sleep_asleep_min', 'ч', v => round1(v / 60))}</div><div class="stat-lbl">Сон</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(recovery, 'hrv_sdnn_ms', 'мс')}</div><div class="stat-lbl">HRV</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(recovery, 'resting_hr_bpm')}</div><div class="stat-lbl">Пульс покоя</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(recovery, 'vo2max')}</div><div class="stat-lbl">VO2 max</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'steps')}</div><div class="stat-lbl">Шаги</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'distance_km', 'км')}</div><div class="stat-lbl">Дистанция</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'active_energy_kcal', 'ккал')}</div><div class="stat-lbl">Активные</div></div>
+      <div class="stat"><div class="stat-val">${formatHealthValue(activity, 'exercise_minutes', 'мин')}</div><div class="stat-lbl">Exercise</div></div>
+    </div>
+    <div class="support-note">Восстановление: ${recoveryDate}. Активность: ${activityDate}. ${note}</div>`;
+}
+function renderHealthCharts() {
+  const container = document.getElementById('health-charts');
+  if (!container) return;
+  const rows = getHealthDaily();
+  if (rows.length < 2) {
+    container.innerHTML = '<div class="empty-state">Импортируй Apple Health export.zip, чтобы появились графики часов.</div>';
+    return;
+  }
+  const fields = [
+    { key: 'sleep_asleep_min', label: 'Сон', unit: 'ч', color: '#8f8f8f', map: v => round1(v / 60) },
+    { key: 'hrv_sdnn_ms', label: 'HRV SDNN', unit: 'мс', color: '#5fcf6f' },
+    { key: 'resting_hr_bpm', label: 'Пульс покоя', unit: 'уд/мин', color: '#ff7eb6' },
+    { key: 'avg_hr_bpm', label: 'Средний пульс', unit: 'уд/мин', color: '#ff6b00' },
+    { key: 'walking_hr_bpm', label: 'Walking HR', unit: 'уд/мин', color: '#ffc857' },
+    { key: 'vo2max', label: 'VO2 max', unit: '', color: '#9bdc65' },
+    { key: 'respiratory_rate_bpm', label: 'Дыхание', unit: '/мин', color: '#a68bff' },
+    { key: 'oxygen_saturation_pct', label: 'SpO2', unit: '%', color: '#4a9eff' },
+    { key: 'steps', label: 'Шаги', unit: '', color: '#4a9eff' },
+    { key: 'distance_km', label: 'Дистанция', unit: 'км', color: '#5fcf6f' },
+    { key: 'active_energy_kcal', label: 'Активные калории', unit: 'ккал', color: '#ff9f43' }
+    ,{ key: 'basal_energy_kcal', label: 'Базовые калории', unit: 'ккал', color: '#c878ff' }
+    ,{ key: 'exercise_minutes', label: 'Exercise time', unit: 'мин', color: '#ff7eb6' }
+    ,{ key: 'stand_minutes', label: 'Stand time', unit: 'мин', color: '#8f8f8f' }
+    ,{ key: 'workout_minutes', label: 'Тренировки', unit: 'мин', color: '#ff6b00' }
+  ];
+  container.innerHTML = fields.map(f => {
+    const pts = rows
+      .filter(r => r[f.key] != null)
+      .map(r => ({ x: new Date(r.date), y: f.map ? f.map(r[f.key]) : r[f.key] }));
+    if (pts.length < 2) return '';
+    const first = pts[0].y, last = pts[pts.length - 1].y;
+    const delta = round1(last - first);
+    return `<div class="chart-card">
+      <div class="chart-title">${f.label}</div>
+      <div class="chart-stats">
+        <div><span class="chart-stat-label">Последнее:</span> <span class="chart-stat-value">${last} ${f.unit}</span></div>
+        <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${delta >= 0 ? '+' : ''}${delta} ${f.unit}</span></div>
+      </div>
+      ${renderLineChart(pts, f.color)}
+    </div>`;
+  }).filter(Boolean).join('') || '<div class="empty-state">В Apple Health пока мало точек для графиков восстановления.</div>';
+}
+function renderHealthWorkouts() {
+  const container = document.getElementById('health-workouts');
+  if (!container) return;
+  const rows = getHealthDaily().filter(r => r.workouts_count || r.workout_minutes).slice(-24).reverse();
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">В экспорте Apple Health нет тренировок Apple Watch.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(row => {
+    const date = new Date(row.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const types = row.workout_types
+      ? Object.entries(row.workout_types).map(([name, count]) => `${name}${count > 1 ? ` ×${count}` : ''}`).join(', ')
+      : '';
+    return `<div class="chart-card">
+      <div class="chart-title">${date}</div>
+      <div class="chart-stats">
+        <div><span class="chart-stat-label">Тренировки:</span> <span class="chart-stat-value">${row.workouts_count || 0}</span></div>
+        <div><span class="chart-stat-label">Минуты:</span> <span class="chart-stat-value">${row.workout_minutes || 0}</span></div>
+        ${row.workout_energy_kcal ? `<div><span class="chart-stat-label">Ккал:</span> <span class="chart-stat-value">${row.workout_energy_kcal}</span></div>` : ''}
+      </div>
+      ${types ? `<div class="chart-subtitle">${escapeHTML(types)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ===== APPLE HEALTH IMPORT =====
+const HEALTH_TYPES = {
+  heartRate: 'HKQuantityTypeIdentifierHeartRate',
+  restingHR: 'HKQuantityTypeIdentifierRestingHeartRate',
+  walkingHR: 'HKQuantityTypeIdentifierWalkingHeartRateAverage',
+  hrv: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+  vo2max: 'HKQuantityTypeIdentifierVO2Max',
+  respiratoryRate: 'HKQuantityTypeIdentifierRespiratoryRate',
+  oxygenSaturation: 'HKQuantityTypeIdentifierOxygenSaturation',
+  steps: 'HKQuantityTypeIdentifierStepCount',
+  distanceWalkingRunning: 'HKQuantityTypeIdentifierDistanceWalkingRunning',
+  activeEnergy: 'HKQuantityTypeIdentifierActiveEnergyBurned',
+  basalEnergy: 'HKQuantityTypeIdentifierBasalEnergyBurned',
+  exerciseTime: 'HKQuantityTypeIdentifierAppleExerciseTime',
+  standTime: 'HKQuantityTypeIdentifierAppleStandTime',
+  flightsClimbed: 'HKQuantityTypeIdentifierFlightsClimbed',
+  sleep: 'HKCategoryTypeIdentifierSleepAnalysis'
+};
+function setHealthStatus(text) {
+  const el = document.getElementById('health-import-status');
+  if (el) el.textContent = text || '';
+}
+function renderHealthImportStatus() {
+  const rows = getHealthDaily();
+  const meta = getHealthImportMeta();
+  if (!rows.length) {
+    setHealthStatus('Apple Health еще не импортировался. Можно загрузить export.zip прямо сюда.');
+    return;
+  }
+  const first = rows[0].date;
+  const last = rows[rows.length - 1].date;
+  const imported = meta && meta.imported_at ? new Date(meta.imported_at).toLocaleString('ru-RU') : '—';
+  setHealthStatus(`Импортировано ${rows.length} дн. Apple Health: ${first} — ${last}. Последний импорт: ${imported}.`);
+}
+function decodeXMLAttr(value) {
+  return String(value || '')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+function parseXMLAttrs(text) {
+  const attrs = {};
+  String(text || '').replace(/([A-Za-z_:][\w:.-]*)="([^"]*)"/g, (_, key, value) => {
+    attrs[key] = decodeXMLAttr(value);
+    return '';
+  });
+  return attrs;
+}
+function parseAppleDate(value) {
+  const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}) ([+-]\d{2})(\d{2})$/);
+  if (!m) {
+    const d = new Date(value);
+    return isNaN(d) ? null : d;
+  }
+  return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}${m[7]}:${m[8]}`);
+}
+function appleDateKey(value) {
+  const raw = String(value || '');
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  return getDateKey(raw);
+}
+function minutesBetween(start, end) {
+  const s = parseAppleDate(start);
+  const e = parseAppleDate(end);
+  if (!s || !e) return 0;
+  return Math.max(0, (e - s) / 60000);
+}
+function convertHealthValue(value, unit) {
+  const n = normalizeNumber(value);
+  if (n == null) return null;
+  const u = String(unit || '').toLowerCase();
+  if (u === 'kj') return n / 4.184;
+  if (u === 'sec' || u === 's') return n / 60;
+  if (u === 'hr' || u === 'h') return n * 60;
+  return n;
+}
+function convertDistanceValue(value, unit) {
+  const n = normalizeNumber(value);
+  if (n == null) return null;
+  const u = String(unit || '').toLowerCase();
+  if (u === 'm' || u === 'meter' || u === 'meters') return n / 1000;
+  if (u === 'mi' || u === 'mile' || u === 'miles') return n * 1.60934;
+  return n;
+}
+function convertPercentValue(value) {
+  const n = normalizeNumber(value);
+  if (n == null) return null;
+  return n <= 1 ? n * 100 : n;
+}
+function createHealthAggregator() {
+  const days = new Map();
+  const stats = { records: 0, usedRecords: 0, workouts: 0 };
+  const day = (key) => {
+    if (!key) return null;
+    if (!days.has(key)) days.set(key, { date: key });
+    return days.get(key);
+  };
+  const addAvg = (d, key, value) => {
+    if (!d || value == null || !Number.isFinite(value)) return;
+    d[`_${key}_sum`] = (d[`_${key}_sum`] || 0) + value;
+    d[`_${key}_count`] = (d[`_${key}_count`] || 0) + 1;
+  };
+  const addSum = (d, key, value) => {
+    if (!d || value == null || !Number.isFinite(value)) return;
+    d[key] = (d[key] || 0) + value;
+  };
+  return {
+    stats,
+    addRecord(attrs) {
+      stats.records++;
+      const type = attrs.type;
+      if (!Object.values(HEALTH_TYPES).includes(type)) return;
+      stats.usedRecords++;
+      const value = convertHealthValue(attrs.value, attrs.unit);
+      if (type === HEALTH_TYPES.sleep) {
+        const d = day(appleDateKey(attrs.endDate || attrs.startDate));
+        const min = minutesBetween(attrs.startDate, attrs.endDate);
+        const state = attrs.value || '';
+        if (state.includes('InBed')) addSum(d, 'sleep_in_bed_min', min);
+        if (state.includes('Asleep')) addSum(d, 'sleep_asleep_min', min);
+        if (state.includes('AsleepREM')) addSum(d, 'sleep_rem_min', min);
+        if (state.includes('AsleepDeep')) addSum(d, 'sleep_deep_min', min);
+        if (state.includes('AsleepCore')) addSum(d, 'sleep_core_min', min);
+        return;
+      }
+      const d = day(appleDateKey(attrs.startDate || attrs.creationDate));
+      if (type === HEALTH_TYPES.heartRate) addAvg(d, 'avg_hr_bpm', value);
+      if (type === HEALTH_TYPES.restingHR) addAvg(d, 'resting_hr_bpm', value);
+      if (type === HEALTH_TYPES.walkingHR) addAvg(d, 'walking_hr_bpm', value);
+      if (type === HEALTH_TYPES.hrv) addAvg(d, 'hrv_sdnn_ms', value);
+      if (type === HEALTH_TYPES.vo2max) addAvg(d, 'vo2max', value);
+      if (type === HEALTH_TYPES.respiratoryRate) addAvg(d, 'respiratory_rate_bpm', value);
+      if (type === HEALTH_TYPES.oxygenSaturation) addAvg(d, 'oxygen_saturation_pct', convertPercentValue(attrs.value));
+      if (type === HEALTH_TYPES.steps) addSum(d, 'steps', value);
+      if (type === HEALTH_TYPES.distanceWalkingRunning) addSum(d, 'distance_km', convertDistanceValue(attrs.value, attrs.unit));
+      if (type === HEALTH_TYPES.activeEnergy) addSum(d, 'active_energy_kcal', value);
+      if (type === HEALTH_TYPES.basalEnergy) addSum(d, 'basal_energy_kcal', value);
+      if (type === HEALTH_TYPES.exerciseTime) addSum(d, 'exercise_minutes', value);
+      if (type === HEALTH_TYPES.standTime) addSum(d, 'stand_minutes', value);
+      if (type === HEALTH_TYPES.flightsClimbed) addSum(d, 'flights_climbed', value);
+    },
+    addWorkout(attrs) {
+      stats.workouts++;
+      const d = day(appleDateKey(attrs.startDate));
+      if (!d) return;
+      const duration = convertHealthValue(attrs.duration, attrs.durationUnit || 'min') || minutesBetween(attrs.startDate, attrs.endDate);
+      addSum(d, 'workout_minutes', duration);
+      d.workouts_count = (d.workouts_count || 0) + 1;
+      const kcal = convertHealthValue(attrs.totalEnergyBurned, attrs.totalEnergyBurnedUnit || 'Cal');
+      if (kcal != null) addSum(d, 'workout_energy_kcal', kcal);
+      const type = String(attrs.workoutActivityType || '').replace(/^HKWorkoutActivityType/, '');
+      if (type) {
+        if (!d.workout_types) d.workout_types = {};
+        d.workout_types[type] = (d.workout_types[type] || 0) + 1;
+      }
+    },
+    dayCount() {
+      return days.size;
+    },
+    finalize() {
+      const rows = Array.from(days.values()).sort((a, b) => a.date.localeCompare(b.date));
+      rows.forEach(d => {
+        ['avg_hr_bpm', 'resting_hr_bpm', 'walking_hr_bpm', 'hrv_sdnn_ms', 'vo2max', 'respiratory_rate_bpm', 'oxygen_saturation_pct'].forEach(key => {
+          const count = d[`_${key}_count`] || 0;
+          if (count) d[key] = round1(d[`_${key}_sum`] / count);
+          delete d[`_${key}_sum`];
+          delete d[`_${key}_count`];
+        });
+        ['steps', 'distance_km', 'active_energy_kcal', 'basal_energy_kcal', 'exercise_minutes', 'stand_minutes', 'flights_climbed', 'sleep_in_bed_min', 'sleep_asleep_min', 'sleep_rem_min', 'sleep_deep_min', 'sleep_core_min', 'workout_minutes', 'workout_energy_kcal'].forEach(key => {
+          if (d[key] != null) d[key] = round1(d[key]);
+        });
+      });
+      return rows;
+    }
+  };
+}
+function processHealthXMLText(text, aggregator) {
+  const interesting = Object.values(HEALTH_TYPES);
+  text.replace(/<Record\b([^>]*?)\/>/g, (tag, attrsText) => {
+    if (interesting.some(t => tag.includes(t))) aggregator.addRecord(parseXMLAttrs(attrsText));
+    return '';
+  });
+  text.replace(/<Workout\b([^>]*?)>/g, (_, attrsText) => {
+    aggregator.addWorkout(parseXMLAttrs(attrsText));
+    return '';
+  });
+}
+async function parseHealthXMLStream(stream, sizeHint = 0) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  const aggregator = createHealthAggregator();
+  let tail = '';
+  let loaded = 0;
+  let lastStatusAt = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    loaded += value.byteLength || 0;
+    tail += decoder.decode(value, { stream: true });
+    const cut = tail.lastIndexOf('<');
+    if (cut > 0) {
+      processHealthXMLText(tail.slice(0, cut), aggregator);
+      tail = tail.slice(cut);
+    }
+    const now = Date.now();
+    if (now - lastStatusAt > 500) {
+      const pct = sizeHint ? ` · ${Math.min(99, Math.round(loaded / sizeHint * 100))}%` : '';
+      setHealthStatus(`Читаю Apple Health${pct}. Найдено дней: ${aggregator.dayCount()}`);
+      lastStatusAt = now;
+    }
+  }
+  tail += decoder.decode();
+  processHealthXMLText(tail, aggregator);
+  return { rows: aggregator.finalize(), stats: aggregator.stats };
+}
+function readU16(view, offset) { return view.getUint16(offset, true); }
+function readU32(view, offset) { return view.getUint32(offset, true); }
+function findZipEOCD(view) {
+  const min = Math.max(0, view.byteLength - 66000);
+  for (let i = view.byteLength - 22; i >= min; i--) {
+    if (readU32(view, i) === 0x06054b50) return i;
+  }
+  return -1;
+}
+async function getXMLStreamFromZip(file) {
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('Этот браузер не умеет распаковывать ZIP внутри сайта. Загрузи распакованный export.xml или открой в современном Safari/Chrome.');
+  }
+  const buffer = await file.arrayBuffer();
+  const view = new DataView(buffer);
+  const eocd = findZipEOCD(view);
+  if (eocd < 0) throw new Error('Не нашел структуру ZIP. Возможно файл поврежден.');
+  const entries = [];
+  let offset = readU32(view, eocd + 16);
+  const total = readU16(view, eocd + 10);
+  const decoder = new TextDecoder();
+  for (let i = 0; i < total && offset < view.byteLength; i++) {
+    if (readU32(view, offset) !== 0x02014b50) break;
+    const method = readU16(view, offset + 10);
+    const compressedSize = readU32(view, offset + 20);
+    const uncompressedSize = readU32(view, offset + 24);
+    const nameLen = readU16(view, offset + 28);
+    const extraLen = readU16(view, offset + 30);
+    const commentLen = readU16(view, offset + 32);
+    const localOffset = readU32(view, offset + 42);
+    const nameBytes = new Uint8Array(buffer, offset + 46, nameLen);
+    const name = decoder.decode(nameBytes);
+    entries.push({ name, method, compressedSize, uncompressedSize, localOffset });
+    offset += 46 + nameLen + extraLen + commentLen;
+  }
+  const xmlEntries = entries.filter(e => /\.xml$/i.test(e.name) && !/export_cda/i.test(e.name));
+  const entry = (xmlEntries.length ? xmlEntries : entries.filter(e => /\.xml$/i.test(e.name)))
+    .sort((a, b) => b.uncompressedSize - a.uncompressedSize)[0];
+  if (!entry) throw new Error('В ZIP не найден export.xml.');
+  if (readU32(view, entry.localOffset) !== 0x04034b50) throw new Error('Не смог открыть XML внутри ZIP.');
+  const nameLen = readU16(view, entry.localOffset + 26);
+  const extraLen = readU16(view, entry.localOffset + 28);
+  const dataStart = entry.localOffset + 30 + nameLen + extraLen;
+  const blob = file.slice(dataStart, dataStart + entry.compressedSize);
+  if (entry.method === 0) return { stream: blob.stream(), size: entry.uncompressedSize, entryName: entry.name };
+  if (entry.method !== 8) throw new Error(`ZIP использует неподдерживаемое сжатие (${entry.method}).`);
+  return {
+    stream: blob.stream().pipeThrough(new DecompressionStream('deflate-raw')),
+    size: entry.uncompressedSize,
+    entryName: entry.name
+  };
+}
+async function importAppleHealthFile(file) {
+  if (!file) return;
+  try {
+    setHealthStatus('Открываю файл Apple Health...');
+    const isZip = /\.zip$/i.test(file.name);
+    const source = isZip
+      ? await getXMLStreamFromZip(file)
+      : { stream: file.stream(), size: file.size, entryName: file.name };
+    setHealthStatus(`Нашел ${source.entryName}. Читаю XML...`);
+    const result = await parseHealthXMLStream(source.stream, source.size);
+    if (!result.rows.length) {
+      setHealthStatus('XML прочитан, но нужные данные Apple Health не найдены.');
+      alert('Не нашел сон/HRV/пульс/шаги в этом файле.');
+      return;
+    }
+    saveHealthDaily(result.rows);
+    saveHealthImportMeta({
+      file: file.name,
+      xml_entry: source.entryName,
+      imported_at: new Date().toISOString(),
+      days: result.rows.length,
+      records_seen: result.stats.records,
+      records_used: result.stats.usedRecords,
+      workouts: result.stats.workouts,
+      range_start: result.rows[0].date,
+      range_end: result.rows[result.rows.length - 1].date
+    });
+    renderDashboard();
+    renderHealth();
+    initSettings();
+    alert(`Apple Health импортирован: ${result.rows.length} дней. Если последние дни пустые, это нормально: часы просто не носились.`);
+  } catch (e) {
+    setHealthStatus(e.message || 'Не получилось импортировать Apple Health.');
+    alert(e.message || 'Не получилось импортировать Apple Health.');
+  }
+}
 
 // ===== SETTINGS =====
 function initSettings() {
@@ -2711,6 +3242,7 @@ function initSettings() {
   document.getElementById('prog-version').textContent = getProgram().version;
   const signalNote = document.getElementById('signal-support-note');
   if (signalNote) signalNote.textContent = getSignalSupportText();
+  renderHealthImportStatus();
 }
 function toggleSetting(key) {
   const s = getSettings();
@@ -2772,6 +3304,11 @@ function renderEditorExercise(ex, idx) {
         <input class="editor-input" type="text" placeholder="Жим штанги" value="${escapeHTML(ex.name)}" onchange="updateEditorEx(${idx}, 'name', this.value)">
       </div>
       <div class="editor-field" style="margin-top:10px;">
+        <label>Алиасы истории</label>
+        <input class="editor-input" type="text" placeholder="Старые названия через запятую" value="${escapeHTML((ex.aliases || []).join(', '))}" onchange="updateEditorEx(${idx}, 'aliases', parseNameList(this.value))">
+        <div class="editor-hint">Если переименуешь упражнение, старое название попадет сюда, и графики/прошлые подходы не потеряются.</div>
+      </div>
+      <div class="editor-field" style="margin-top:10px;">
         <label>Цель подходов</label>
         <input class="editor-input" type="text" placeholder="3×8-10, RIR 2" value="${escapeHTML(ex.target || '')}" onchange="updateEditorEx(${idx}, 'target', this.value)">
       </div>
@@ -2795,7 +3332,7 @@ function renderEditorExercise(ex, idx) {
       </div>
       <div class="editor-field" style="margin-top:10px;">
         <label>Замены для кнопки «⇄ Замена»</label>
-        <input class="editor-input" type="text" placeholder="Через запятую" value="${escapeHTML((ex.swaps || []).join(', '))}" onchange="updateEditorEx(${idx}, 'swaps', this.value.split(',').map(s=>s.trim()).filter(x=>x))">
+        <input class="editor-input" type="text" placeholder="Через запятую" value="${escapeHTML((ex.swaps || []).join(', '))}" onchange="updateEditorEx(${idx}, 'swaps', parseNameList(this.value))">
       </div>
     </div>
   `;
@@ -2804,8 +3341,25 @@ function switchEditorDay(d) { editorDay = d; renderProgramEditor(); }
 function updateDayName(v) { const p = getProgram(); p.days[editorDay].name = v; saveProgram(p); }
 function updateEditorEx(idx, field, value) {
   const p = getProgram();
-  p.days[editorDay].exercises[idx][field] = value;
+  const ex = p.days[editorDay].exercises[idx];
+  if (!ex) return;
+  if (field === 'name') {
+    const oldName = String(ex.name || '').trim();
+    const newName = String(value || '').trim();
+    if (!newName) return;
+    if (oldName && normalizeExerciseName(oldName) !== normalizeExerciseName(newName)) {
+      ex.aliases = cleanExerciseAliases([...(ex.aliases || []), oldName], newName);
+    }
+    ex.name = newName;
+  } else if (field === 'aliases') {
+    ex.aliases = cleanExerciseAliases(value, ex.name);
+  } else if (field === 'swaps') {
+    ex.swaps = parseNameList(Array.isArray(value) ? value.join(',') : value);
+  } else {
+    ex[field] = value;
+  }
   saveProgram(p);
+  if (field === 'name') renderProgramEditor();
 }
 function moveEditorEx(idx, dir) {
   const p = getProgram();
@@ -2826,7 +3380,7 @@ function deleteEditorEx(idx) {
 function addEditorExercise() {
   const p = getProgram();
   p.days[editorDay].exercises.push({
-    name: "Новое упражнение", target: "3×10, RIR 1", sets: 3, reps_min: 10, reps_max: 12, rest: 90, swaps: []
+    name: "Новое упражнение", aliases: [], target: "3×10, RIR 1", sets: 3, reps_min: 10, reps_max: 12, rest: 90, swaps: []
   });
   saveProgram(p);
   renderProgramEditor();
@@ -2843,24 +3397,92 @@ function newProgramVersion() {
 
 // ===== EXPORT / IMPORT =====
 function getExportPayload() {
-  return { history: getHistory(), measures: getMeasures(), goals: getGoals(), program: getProgram(), start_date: getStartDate(), settings: getSettings(), exported_at: new Date().toISOString() };
+  return {
+    app: 'trenya',
+    backup_version: 2,
+    history: getHistory(),
+    measures: getMeasures(),
+    apple_health_daily: getHealthDaily(),
+    apple_health_import: getHealthImportMeta(),
+    goals: getGoals(),
+    program: getProgram(),
+    start_date: getStartDate(),
+    settings: getSettings(),
+    exported_at: new Date().toISOString()
+  };
 }
-function exportData() {
-  const data = getExportPayload();
-  fallbackCopy(JSON.stringify(data, null, 2));
-}
-function downloadData() {
-  const data = JSON.stringify(getExportPayload(), null, 2);
+function downloadJSONFile(filename, payload) {
+  const data = JSON.stringify(payload, null, 2);
   const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const stamp = new Date().toISOString().split('T')[0];
   a.href = url;
-  a.download = `trenya-backup-${stamp}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadData() {
+  const stamp = new Date().toISOString().split('T')[0];
+  downloadJSONFile(`trenya-backup-${stamp}.json`, getExportPayload());
+}
+function getWorkoutSummaryForAI(workout) {
+  const exercises = (workout.exercises || []).map(ex => {
+    const sets = (ex.sets || []).filter(setHasLiftData).map(s => ({
+      weight_kg: normalizeNumber(s.weight),
+      reps: parseInt(s.reps, 10) || null,
+      rir: s.rir || null,
+      drop: dropSetHasData(s) ? {
+        weight_kg: normalizeNumber(s.drop.weight),
+        reps: parseInt(s.drop.reps, 10) || null
+      } : null
+    }));
+    return {
+      name: ex.name,
+      target: ex.target || null,
+      tonnage_kg: round1((ex.sets || []).reduce((sum, s) => sum + getSetVolume(s), 0)),
+      sets,
+      note: ex.note || null
+    };
+  });
+  return {
+    date: getDateKey(workout.date),
+    day: workout.day,
+    day_name: workout.dayName,
+    week: workout.week || null,
+    program_version: workout.programVersion || null,
+    total_tonnage_kg: round1(exercises.reduce((sum, ex) => sum + (ex.tonnage_kg || 0), 0)),
+    exercises,
+    note: workout.note || null
+  };
+}
+function getAIExportPayload() {
+  const history = getHistory();
+  const health = getHealthDaily();
+  return {
+    schema: 'trenya-ai-analysis-v1',
+    generated_at: new Date().toISOString(),
+    instruction: 'Проанализируй тренировки, прогрессию, восстановление, замеры и возможные связи между нагрузкой, сном, HRV и пульсом покоя. Не ставь диагнозы.',
+    summary: {
+      workouts_count: history.length,
+      first_workout: history[0] ? getDateKey(history[0].date) : null,
+      last_workout: history[history.length - 1] ? getDateKey(history[history.length - 1].date) : null,
+      body_measures_count: getMeasures().length,
+      apple_health_days: health.length,
+      apple_health_range: health.length ? { start: health[0].date, end: health[health.length - 1].date } : null
+    },
+    program: getProgram(),
+    workouts: history.map(getWorkoutSummaryForAI),
+    body_measures: getMeasures(),
+    goals: getGoals(),
+    apple_health_daily: health,
+    apple_health_import: getHealthImportMeta()
+  };
+}
+function downloadAIExport() {
+  const stamp = new Date().toISOString().split('T')[0];
+  downloadJSONFile(`trenya-ai-export-${stamp}.json`, getAIExportPayload());
 }
 function importDataFile(file) {
   if (!file) return;
@@ -2877,64 +3499,21 @@ function importDataFile(file) {
 }
 function importData(data) {
   const has = (key) => Object.prototype.hasOwnProperty.call(data, key);
-  if (!data || typeof data !== 'object' || !['history','measures','goals','program','start_date','settings'].some(has)) {
+  if (!data || typeof data !== 'object' || !['history','measures','goals','program','start_date','settings','apple_health_daily'].some(has)) {
     alert('Это не похоже на backup-файл Трени.');
     return;
   }
   if (!confirm('Импорт заменит текущие данные в этом браузере. Продолжить?')) return;
   if (has('history')) saveHistory(Array.isArray(data.history) ? data.history : []);
   if (has('measures')) saveMeasures(Array.isArray(data.measures) ? data.measures : []);
+  if (has('apple_health_daily')) saveHealthDaily(Array.isArray(data.apple_health_daily) ? data.apple_health_daily : []);
+  if (has('apple_health_import')) saveHealthImportMeta(data.apple_health_import && typeof data.apple_health_import === 'object' ? data.apple_health_import : null);
   if (has('goals')) saveGoals(data.goals && typeof data.goals === 'object' ? data.goals : {});
   if (has('program')) saveProgram(data.program && typeof data.program === 'object' ? data.program : DEFAULT_PROGRAM);
   if (has('start_date')) localStorage.setItem('start_date', data.start_date || new Date().toISOString().split('T')[0]);
   if (has('settings')) saveSettings(data.settings && typeof data.settings === 'object' ? data.settings : getSettings());
   alert('Импорт готов. Страница перезагрузится.');
   location.reload();
-}
-function fallbackCopy(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => alert('Скопировано в буфер ✓')).catch(() => doFallback(text));
-  } else { doFallback(text); }
-}
-function doFallback(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed'; ta.style.top = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); alert('Скопировано ✓'); } catch (e) { alert('Не получилось.'); }
-  document.body.removeChild(ta);
-}
-function exportText() {
-  const history = getHistory();
-  if (history.length === 0) { alert('Пока нечего экспортировать'); return; }
-  const lines = ['=== Дневник тренировок ===\n'];
-  history.forEach(w => {
-    const d = new Date(w.date).toLocaleDateString('ru-RU');
-    lines.push(`📅 ${d} · Неделя ${w.week || '?'} · ${w.dayName}`);
-    w.exercises.forEach(ex => {
-      const sets = ex.sets.filter(setHasLiftData);
-      if (sets.length === 0) return;
-      lines.push(`  ${ex.name}`);
-      sets.forEach((s, i) => lines.push(`    ${i+1}. ${formatSetForExport(s)}`));
-      if (ex.note) lines.push(`    📝 ${ex.note}`);
-    });
-    if (w.note) lines.push(`  📝 ${w.note}`);
-    lines.push('');
-  });
-  const measures = getMeasures();
-  if (measures.length > 0) {
-    lines.push('=== Замеры ===\n');
-    measures.forEach(m => {
-      const d = new Date(m.date).toLocaleDateString('ru-RU');
-      const parts = [];
-      MEASURE_FIELDS.forEach(f => {
-        if (m[f.key] != null) parts.push(`${f.label.toLowerCase()} ${m[f.key]} ${f.unit}`);
-      });
-      lines.push(`${d}: ${parts.join(', ')}`);
-    });
-  }
-  fallbackCopy(lines.join('\n'));
 }
 function resetAll() {
   if (!confirm('Точно удалить ВСЕ данные?')) return;
