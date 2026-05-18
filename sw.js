@@ -1,4 +1,4 @@
-const CACHE_NAME = "trenya-v17";
+const CACHE_NAME = "trenya-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
