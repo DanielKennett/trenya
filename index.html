@@ -72,7 +72,7 @@
   /* ============ NAV — bottom tab bar ============ */
   .nav {
     position: fixed; left: 0; right: 0; bottom: 0;
-    display: grid; grid-template-columns: repeat(var(--nav-count, 8), 1fr);
+    display: grid; grid-template-columns: repeat(var(--nav-count, 3), 1fr);
     gap: 2px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     background: oklch(0.135 0.006 50 / 0.85);
     backdrop-filter: blur(18px) saturate(140%);
@@ -183,6 +183,24 @@
   .stat .flame { color: var(--ember); }
   .burned-calories { color: var(--good) !important; }
   .burned-calories .unit { color: var(--good) !important; opacity: .85; }
+  .dash-links {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin: 0 0 14px;
+  }
+  .dash-link {
+    appearance: none; border: 1px solid var(--line-soft);
+    background: var(--surface); color: var(--fg);
+    border-radius: var(--r-md); padding: 12px;
+    min-height: 58px; cursor: pointer; font-family: var(--sans);
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    transition: transform .08s, background .15s, border-color .15s;
+  }
+  .dash-link:active { transform: scale(.985); background: var(--surface-2); }
+  .dash-link svg {
+    width: 20px; height: 20px; flex-shrink: 0;
+    stroke: var(--ember); stroke-width: 1.9;
+  }
+  .dash-link span { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
 
   .deload-banner {
     background: var(--gold-soft); border: 1px solid oklch(0.85 0.13 95 / 0.3);
@@ -308,14 +326,6 @@
   .exercise-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
   .exercise-target { font-family: var(--num); font-size: 11px; color: var(--fg-3);
                      margin-top: 4px; letter-spacing: 0.03em; }
-  .exercise-meta { display: flex; gap: 6px; flex-shrink: 0; }
-  .last-time {
-    font-family: var(--num); font-size: 11px; font-weight: 600;
-    color: var(--ember); background: var(--ember-soft);
-    border: 1px solid var(--ember-line);
-    padding: 4px 8px; border-radius: 7px; white-space: nowrap;
-    letter-spacing: 0.02em;
-  }
   .ex-toolbar {
     display: flex; gap: 4px; padding: 0 12px 10px; border-bottom: 1px solid var(--line-soft);
   }
@@ -352,7 +362,7 @@
 
   .sets { padding: 4px 0 2px; }
   .header-labels {
-    display: grid; grid-template-columns: 26px minmax(0,1fr) minmax(0,1fr) 44px 38px 40px 48px; gap: 5px;
+    display: grid; grid-template-columns: 26px minmax(0,1fr) minmax(0,1fr) 44px 40px 48px; gap: 5px;
     padding: 10px 14px 6px;
     font-family: var(--num); font-size: 10px;
     color: var(--fg-4); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
@@ -364,9 +374,10 @@
     background: var(--surface);
   }
   .set-row {
-    display: grid; grid-template-columns: 26px minmax(0,1fr) minmax(0,1fr) 44px 38px 40px 48px; gap: 5px;
+    display: grid; grid-template-columns: 26px minmax(0,1fr) minmax(0,1fr) 44px 40px 48px; gap: 5px;
     padding: 4px 14px; align-items: center; position: relative; z-index: 1;
     background: var(--surface); transition: transform .16s cubic-bezier(.2,.7,.2,1);
+    touch-action: pan-y; user-select: none; will-change: transform;
   }
   .set-wrap.show-delete .set-row { transform: translateX(58px); }
   .set-delete-btn {
@@ -377,7 +388,8 @@
     display: grid; place-items: center; opacity: 0; transform: scale(.88);
     pointer-events: none; transition: opacity .14s, transform .14s; z-index: 0;
   }
-  .set-wrap.show-delete .set-delete-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
+  .set-wrap.show-delete .set-delete-btn,
+  .set-wrap.swiping-delete .set-delete-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
   .set-row::before {
     content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
     background: transparent; transition: background .12s;
@@ -411,14 +423,6 @@
   }
   .check-btn svg { width: 18px; height: 18px; }
   .check-btn.done { background: var(--good); border-color: var(--good); color: var(--bg); }
-  .copy-set-btn {
-    appearance: none; background: var(--surface-2); border: 1px solid var(--line-soft);
-    color: var(--fg-3); border-radius: 10px; height: 46px; cursor: pointer;
-    display: grid; place-items: center; font-size: 18px; font-weight: 800;
-    font-family: var(--num); transition: background .12s, border-color .12s, color .12s, transform .12s;
-  }
-  .copy-set-btn:active { transform: scale(.97); background: var(--line); color: var(--fg); }
-  .copy-set-btn:disabled { opacity: .28; cursor: default; transform: none; }
   .drop-toggle {
     appearance: none; border: 1px solid var(--line-soft);
     background: var(--surface-2); color: var(--fg-3);
@@ -996,26 +1000,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M4 9l-2 2 4 4-2 2 3 3 2-2 4 4 2-2M15 9l2-2 3 3-2 2M9 15l-2 2 3 3 2-2"/></svg>
     <span>Трен</span>
   </button>
-  <button class="nav-btn" data-screen="progress" aria-label="Графики">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M14 7h7v7"/></svg>
-    <span>График</span>
-  </button>
-  <button class="nav-btn" data-screen="measure" aria-label="Замеры">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>
-    <span>Замеры</span>
-  </button>
-  <button class="nav-btn" data-screen="health" aria-label="Часы">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="5" width="10" height="14" rx="4"/><path d="M9 5V3h6v2M9 19v2h6v-2M10 12h4"/></svg>
-    <span>Часы</span>
-  </button>
-  <button class="nav-btn" data-screen="food" aria-label="Еда">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v8M10 3v8M8 3v18"/><path d="M4 11h8"/><path d="M17 3v18"/><path d="M17 3c2 2.4 3 4.7 3 7 0 2-1.2 3.4-3 3.4"/></svg>
-    <span>Еда</span>
-  </button>
-  <button class="nav-btn" data-screen="history" aria-label="История">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-    <span>История</span>
-  </button>
   <button class="nav-btn" data-screen="settings" aria-label="Настройки">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     <span>Опции</span>
@@ -1169,11 +1153,7 @@
     <span>Скрывать таймер по нулю</span>
     <div class="toggle on" id="toggle-autoclose" onclick="toggleSetting('autoclose')"></div>
   </div>
-  <button class="btn-secondary" onclick="testTimerSignal()">Проверить сигнал таймера</button>
 
-  <h2>Разделы</h2>
-  <div id="section-toggles"></div>
-  
   <h2>Программа</h2>
   <button class="btn-secondary" onclick="openProgramEditor()">✏️ Редактировать программу</button>
   <button class="btn-secondary" onclick="newProgramVersion()">🆕 Новая версия программы</button>
@@ -1248,14 +1228,20 @@ const DEFAULT_PROGRAM = {
 const ROTATION = { odd: ["upperA", "lower", "upperB"], even: ["lower", "upperA", "upperB"] };
 const HEALTH_IMPORT_START_DATE = '2026-05-16';
 const OPTIONAL_SECTIONS = [
-  { key: 'workout', label: 'Тренировка' },
   { key: 'progress', label: 'Графики' },
   { key: 'measure', label: 'Замеры' },
   { key: 'health', label: 'Часы' },
   { key: 'food', label: 'Еда' },
   { key: 'history', label: 'История' }
 ];
-const ALWAYS_VISIBLE_SECTIONS = new Set(['dashboard', 'settings']);
+const ALWAYS_VISIBLE_SECTIONS = new Set(['dashboard', 'workout', 'settings']);
+const DASH_LINK_ICONS = {
+  progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M14 7h7v7"/></svg>',
+  measure: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v8H3z"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>',
+  health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="5" width="10" height="14" rx="4"/><path d="M9 5V3h6v2M9 19v2h6v-2M10 12h4"/></svg>',
+  food: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v8M10 3v8M8 3v18"/><path d="M4 11h8"/><path d="M17 3v18"/><path d="M17 3c2 2.4 3 4.7 3 7 0 2-1.2 3.4-3 3.4"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+};
 
 // ===== STATE =====
 let currentDay = null;
@@ -1356,24 +1342,11 @@ function getStartDate() {
   return d;
 }
 function setStartDate(d) { localStorage.setItem('start_date', d); updateWeekDisplay(); renderDashboard(); }
-function getDefaultSectionSettings() {
-  return Object.fromEntries(OPTIONAL_SECTIONS.map(section => [section.key, true]));
-}
-function normalizeSectionSettings(sections) {
-  const defaults = getDefaultSectionSettings();
-  Object.keys(defaults).forEach(key => {
-    if (sections && Object.prototype.hasOwnProperty.call(sections, key)) {
-      defaults[key] = sections[key] !== false;
-    }
-  });
-  return defaults;
-}
 function getSettings() {
   const stored = readJSON('settings', {});
   return {
     timer: stored.timer !== false,
-    autoclose: stored.autoclose !== false,
-    sections: normalizeSectionSettings(stored.sections)
+    autoclose: stored.autoclose !== false
   };
 }
 function saveSettings(s) { localStorage.setItem('settings', JSON.stringify(s)); }
@@ -1728,28 +1701,21 @@ function initTapAnimations() {
 }
 
 // ===== NAV =====
-function isSectionVisible(name, settings = getSettings()) {
-  if (ALWAYS_VISIBLE_SECTIONS.has(name)) return true;
-  return settings.sections && settings.sections[name] !== false;
+function isSectionVisible(name) {
+  return ALWAYS_VISIBLE_SECTIONS.has(name) || OPTIONAL_SECTIONS.some(section => section.key === name);
 }
 function applySectionVisibility() {
-  const settings = getSettings();
   const nav = document.querySelector('.nav');
-  let visibleCount = 0;
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    const visible = isSectionVisible(btn.dataset.screen, settings);
-    btn.classList.toggle('section-hidden', !visible);
-    btn.hidden = !visible;
-    if (visible) visibleCount++;
+    btn.classList.remove('section-hidden');
+    btn.hidden = false;
   });
-  if (nav) nav.style.setProperty('--nav-count', String(Math.max(1, visibleCount)));
-  const active = document.querySelector('.screen.active');
-  const activeName = active ? active.id.replace(/^screen-/, '') : 'dashboard';
-  if (!isSectionVisible(activeName, settings)) switchToScreen('dashboard', false);
+  if (nav) nav.style.setProperty('--nav-count', '3');
 }
 function switchToScreen(name, animate = true) {
   if (!isSectionVisible(name)) name = 'dashboard';
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+  const navName = ['dashboard', 'workout', 'settings'].includes(name) ? name : 'dashboard';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === navName));
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById('screen-' + name);
   if (!screen) return;
@@ -1834,6 +1800,18 @@ function renderDashboardCalendar(today = new Date()) {
   const monthName = today.toLocaleDateString('ru-RU', { month: 'long' });
   return `<div class="dash-calendar-head"><h2>Календарь</h2><div class="dash-calendar-range">${monthName} до ${end.getDate()}</div></div>
     <div class="dash-calendar-scroll"><div class="dash-calendar">${days}</div></div>`;
+}
+function renderDashboardLinks() {
+  const order = ['history', 'progress', 'measure', 'health', 'food'];
+  const links = order
+    .map(key => OPTIONAL_SECTIONS.find(section => section.key === key))
+    .filter(Boolean)
+    .map(section => `<button class="dash-link" onclick="switchToScreen('${section.key}')">
+      ${DASH_LINK_ICONS[section.key] || ''}
+      <span>${escapeHTML(section.label)}</span>
+    </button>`)
+    .join('');
+  return links ? `<div class="dash-links">${links}</div>` : '';
 }
 function renderRecoverySummary() {
   const rows = getHealthDaily();
@@ -1937,7 +1915,7 @@ function renderDashboard() {
   }
 
   html += renderDashboardCalendar(today);
-  html += renderRecoverySummary();
+  html += renderDashboardLinks();
 
   // Stat grid
   html += `<h2>Сводка</h2>
@@ -2210,7 +2188,6 @@ function renderExercises() {
   list.innerHTML = '';
   currentWorkout.exercises.forEach((ex, exIdx) => {
     const last = getLastExerciseData(ex.name);
-    const lastText = last ? formatLastSets(last.sets) : '';
     const safeName = escapeHTML(ex.name);
     const safeTarget = escapeHTML(ex.target || '');
 
@@ -2222,16 +2199,13 @@ function renderExercises() {
           <div class="exercise-name">${safeName}</div>
           <div class="exercise-target">${safeTarget}</div>
         </div>
-        <div class="exercise-meta">
-          ${lastText ? `<div class="last-time" title="Прошлый раз">⏮ ${escapeHTML(lastText)}</div>` : ''}
-        </div>
       </div>
       <div class="ex-toolbar">
         <button class="icon-btn" onclick="moveExercise(${exIdx}, -1)" ${exIdx === 0 ? 'disabled' : ''} aria-label="Вверх">↑</button>
         <button class="icon-btn" onclick="moveExercise(${exIdx}, 1)" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''} aria-label="Вниз">↓</button>
         <button class="icon-btn" onclick="openSwap(${exIdx})">⇄ Замена</button>
       </div>
-      <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span><span></span><span>drop</span></div>
+      <div class="header-labels"><span>#</span><span>кг</span><span>повт</span><span>RIR</span><span></span><span>drop</span></div>
       <div class="sets">${ex.sets.map((s, sIdx) => renderSetRow(exIdx, sIdx, s, last)).join('')}</div>
       ${last ? renderCompareRow(ex, last) : ''}
       <div class="exercise-note-section">
@@ -2263,28 +2237,6 @@ function renderCompareRow(currentEx, lastEx) {
   return `<div class="compare-row">vs прошлый: <span class="${cls}">${arrow} ${delta >= 0 ? '+' : ''}${delta.toFixed(0)} кг</span> объёма${prText}</div>`;
 }
 
-function formatLastSets(sets) {
-  const done = sets.filter(s => s.weight && s.reps);
-  if (done.length === 0) return '';
-  const weights = done.map(s => parseFloat(s.weight)).filter(w => !isNaN(w));
-  const reps = done.map(s => parseInt(s.reps)).filter(r => !isNaN(r));
-  if (weights.length === 0) return '';
-  const wMax = Math.max(...weights);
-  const rText = reps[0] === reps[reps.length-1] ? reps[0] : `${reps[reps.length-1]}-${reps[0]}`;
-  return `${wMax}×${rText}`;
-}
-function setHasCopyData(set) {
-  return !!(set && (set.weight || set.reps || set.rir || dropSetHasData(set)));
-}
-function getPreviousSetForCopy(exIdx, sIdx) {
-  if (!currentWorkout || !currentWorkout.exercises[exIdx]) return null;
-  const sets = currentWorkout.exercises[exIdx].sets || [];
-  for (let i = sIdx - 1; i >= 0; i--) {
-    if (setHasCopyData(sets[i])) return sets[i];
-  }
-  return null;
-}
-
 function renderSetRow(exIdx, sIdx, set, lastEx) {
   const lastSet = lastEx && lastEx.sets[sIdx];
   const wPh = lastSet ? escapeHTML(lastSet.weight) : '';
@@ -2293,7 +2245,6 @@ function renderSetRow(exIdx, sIdx, set, lastEx) {
   const dropActive = hasDropSet(set);
   const dropWPh = lastSet && lastSet.drop ? escapeHTML(lastSet.drop.weight) : '';
   const dropRPh = lastSet && lastSet.drop ? escapeHTML(lastSet.drop.reps) : '';
-  const canCopy = !!getPreviousSetForCopy(exIdx, sIdx);
   const dropRow = dropActive ? `
     <div class="drop-row" data-ex-idx="${exIdx}" data-set-idx="${sIdx}">
       <div class="drop-row-label">DROP</div>
@@ -2309,7 +2260,6 @@ function renderSetRow(exIdx, sIdx, set, lastEx) {
         <input type="number" inputmode="decimal" class="set-input ${set.done ? 'done' : ''}" placeholder="${wPh}" value="${escapeHTML(set.weight)}" onchange="updateSet(${exIdx}, ${sIdx}, 'weight', this.value)">
         <input type="number" inputmode="numeric" class="set-input ${set.done ? 'done' : ''}" placeholder="${rPh}" value="${escapeHTML(set.reps)}" onchange="updateSet(${exIdx}, ${sIdx}, 'reps', this.value)">
         <input type="number" inputmode="numeric" class="rir-input" placeholder="–" value="${escapeHTML(set.rir)}" min="0" max="5" onchange="updateSet(${exIdx}, ${sIdx}, 'rir', this.value)">
-        <button class="copy-set-btn" onclick="copyPreviousSet(${exIdx}, ${sIdx})" ${canCopy ? '' : 'disabled'} aria-label="Копировать предыдущий подход" title="Копировать предыдущий подход">↺</button>
         <button class="check-btn ${set.done ? 'done' : ''}" onclick="toggleSet(${exIdx}, ${sIdx})" aria-label="Отметить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg></button>
         <button class="drop-toggle ${dropActive ? 'active' : ''}" onclick="toggleDropSet(${exIdx}, ${sIdx})" aria-label="Дропсет подхода ${sIdx + 1}" title="Дропсет">DROP</button>
       </div>
@@ -2323,7 +2273,6 @@ function updateSet(exIdx, sIdx, field, value) {
   set[field] = value;
   saveWorkoutDraft();
   updateSetRowState(exIdx, sIdx);
-  updateCopyButtons(exIdx);
   updateExerciseCompare(exIdx);
 }
 function updateSetRowState(exIdx, sIdx) {
@@ -2336,13 +2285,6 @@ function updateSetRowState(exIdx, sIdx) {
   if (btn) btn.classList.toggle('done', !!set.done);
   const dropBtn = row.querySelector('.drop-toggle');
   if (dropBtn) dropBtn.classList.toggle('active', hasDropSet(set));
-}
-function updateCopyButtons(exIdx) {
-  document.querySelectorAll(`.set-row[data-ex-idx="${exIdx}"]`).forEach(row => {
-    const btn = row.querySelector('.copy-set-btn');
-    if (!btn) return;
-    btn.disabled = !getPreviousSetForCopy(exIdx, parseInt(row.dataset.setIdx, 10));
-  });
 }
 function ensureDropSet(set) {
   if (!set.drop) set.drop = { enabled: false, weight: '', reps: '' };
@@ -2366,24 +2308,7 @@ function updateDropSet(exIdx, sIdx, field, value) {
   drop.enabled = true;
   drop[field] = value;
   saveWorkoutDraft();
-  updateCopyButtons(exIdx);
   updateExerciseCompare(exIdx);
-}
-function copyPreviousSet(exIdx, sIdx) {
-  const source = getPreviousSetForCopy(exIdx, sIdx);
-  if (!source || !currentWorkout || !currentWorkout.exercises[exIdx]) return;
-  const target = currentWorkout.exercises[exIdx].sets[sIdx];
-  target.weight = source.weight || '';
-  target.reps = source.reps || '';
-  target.rir = source.rir || '';
-  target.done = false;
-  target.drop = {
-    enabled: dropSetHasData(source),
-    weight: source.drop && source.drop.weight ? source.drop.weight : '',
-    reps: source.drop && source.drop.reps ? source.drop.reps : ''
-  };
-  saveWorkoutDraft();
-  renderExercises();
 }
 function closeSetDeleteButtons(except = null) {
   document.querySelectorAll('.set-wrap.show-delete').forEach(wrap => {
@@ -2406,40 +2331,69 @@ function initSetSwipeGestures() {
   const list = document.getElementById('exercises-list');
   if (!list || list.dataset.swipeReady) return;
   list.dataset.swipeReady = '1';
-  list.addEventListener('pointerdown', event => {
+  const startSwipe = (event, point) => {
     const row = event.target.closest('.set-row');
     const wrap = row && row.closest('.set-wrap');
-    if (!row || !wrap || event.button > 0) return;
-    setSwipeState = { wrap, row, startX: event.clientX, startY: event.clientY, dragging: false };
-  });
-  list.addEventListener('pointermove', event => {
+    if (!row || !wrap) return;
+    if (event.button != null && event.button > 0) return;
+    setSwipeState = {
+      wrap,
+      row,
+      startX: point.clientX,
+      startY: point.clientY,
+      lastX: point.clientX,
+      dragging: false
+    };
+  };
+  const moveSwipe = (event, point) => {
     if (!setSwipeState) return;
-    const dx = event.clientX - setSwipeState.startX;
-    const dy = event.clientY - setSwipeState.startY;
+    const dx = point.clientX - setSwipeState.startX;
+    const dy = point.clientY - setSwipeState.startY;
+    setSwipeState.lastX = point.clientX;
     if (dx > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) {
       setSwipeState.dragging = true;
-      setSwipeState.row.style.transform = `translateX(${Math.min(64, dx)}px)`;
+      setSwipeState.wrap.classList.add('swiping-delete');
+      setSwipeState.row.style.transform = `translateX(${Math.min(58, dx)}px)`;
       event.preventDefault();
     }
     if (dx < -16 && setSwipeState.wrap.classList.contains('show-delete')) {
       setSwipeState.wrap.classList.remove('show-delete');
     }
-  });
-  const endSwipe = event => {
+  };
+  const endSwipe = point => {
     if (!setSwipeState) return;
-    const dx = event.clientX - setSwipeState.startX;
+    const dx = (point && point.clientX ? point.clientX : setSwipeState.lastX) - setSwipeState.startX;
     setSwipeState.row.style.transform = '';
+    setSwipeState.wrap.classList.remove('swiping-delete');
     if (setSwipeState.dragging && dx > 46) {
       closeSetDeleteButtons(setSwipeState.wrap);
       setSwipeState.wrap.classList.add('show-delete');
     }
     setSwipeState = null;
   };
-  list.addEventListener('pointerup', endSwipe);
-  list.addEventListener('pointercancel', () => {
-    if (setSwipeState) setSwipeState.row.style.transform = '';
+  const cancelSwipe = () => {
+    if (setSwipeState) {
+      setSwipeState.row.style.transform = '';
+      setSwipeState.wrap.classList.remove('swiping-delete');
+    }
     setSwipeState = null;
+  };
+  list.addEventListener('pointerdown', event => startSwipe(event, event));
+  list.addEventListener('pointermove', event => moveSwipe(event, event));
+  list.addEventListener('pointerup', event => endSwipe(event));
+  list.addEventListener('pointercancel', () => {
+    cancelSwipe();
   });
+  list.addEventListener('touchstart', event => {
+    if (setSwipeState || !event.touches || event.touches.length !== 1) return;
+    startSwipe(event, event.touches[0]);
+  }, { passive: true });
+  list.addEventListener('touchmove', event => {
+    if (!setSwipeState || !event.touches || event.touches.length !== 1) return;
+    moveSwipe(event, event.touches[0]);
+  }, { passive: false });
+  list.addEventListener('touchend', event => endSwipe(event.changedTouches && event.changedTouches[0]), { passive: true });
+  list.addEventListener('touchcancel', cancelSwipe, { passive: true });
   document.addEventListener('click', event => {
     if (!event.target.closest('.set-wrap')) closeSetDeleteButtons();
   });
@@ -2591,12 +2545,6 @@ function fireTimerSignal() {
   flashTimerSignal();
   vibrateSignal();
   playBeep(4);
-}
-async function testTimerSignal() {
-  const sound = await playBeep(3);
-  const vib = vibrateSignal([220, 90, 350]);
-  flashTimerSignal();
-  alert(`Проверка: звук ${sound ? 'отправлен' : 'заблокирован браузером'}, вибрация ${vib ? 'отправлена' : 'не поддерживается или заблокирована'}.`);
 }
 function saveTimerState() {
   if (!timerEndAt) return;
@@ -4224,7 +4172,6 @@ function initSettings() {
   document.getElementById('start-date').value = getStartDate();
   const progVersion = document.getElementById('prog-version');
   if (progVersion) progVersion.textContent = getProgram().version;
-  renderSectionToggles();
   applySectionVisibility();
   renderHealthImportStatus();
 }
@@ -4233,25 +4180,6 @@ function toggleSetting(key) {
   s[key] = !s[key];
   saveSettings(s);
   document.getElementById('toggle-' + key).classList.toggle('on', s[key]);
-}
-function renderSectionToggles() {
-  const box = document.getElementById('section-toggles');
-  if (!box) return;
-  const settings = getSettings();
-  box.innerHTML = OPTIONAL_SECTIONS.map(section => {
-    const on = settings.sections[section.key] !== false;
-    return `<div class="toggle-row">
-      <span>${section.label}</span>
-      <div class="toggle ${on ? 'on' : ''}" id="toggle-section-${section.key}" onclick="toggleSection('${section.key}')"></div>
-    </div>`;
-  }).join('');
-}
-function toggleSection(key) {
-  const settings = getSettings();
-  settings.sections[key] = settings.sections[key] === false;
-  saveSettings(settings);
-  applySectionVisibility();
-  renderSectionToggles();
 }
 
 // ===== PROGRAM EDITOR =====
