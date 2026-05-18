@@ -1,4 +1,4 @@
-const CACHE_NAME = "trenya-v22";
+const CACHE_NAME = "trenya-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -25,38 +25,54 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+async function putInCache(request, response) {
+  if (!response || !response.ok) return;
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+}
 
-  const url = new URL(event.request.url);
-  const isPageRequest = event.request.mode === "navigate" ||
+function isNavigationRequest(request, url) {
+  return request.mode === "navigate" ||
     url.pathname.endsWith("/") ||
     url.pathname.endsWith("/index.html");
+}
 
-  if (isPageRequest) {
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  if (isNavigationRequest(request, url)) {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        await putInCache("./index.html", response);
+        return response;
+      } catch (e) {
+        return (await caches.match(request)) ||
+          (await caches.match("./index.html")) ||
+          (await caches.match("./"));
+      }
+    })());
+    return;
+  }
+
+  if (url.origin !== self.location.origin) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        putInCache(request, response);
+        return response;
+      }))
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
-  );
+  event.respondWith((async () => {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const response = await fetch(request);
+    await putInCache(request, response);
+    return response;
+  })());
 });
