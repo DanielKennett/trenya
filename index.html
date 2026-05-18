@@ -72,7 +72,7 @@
   /* ============ NAV — bottom tab bar ============ */
   .nav {
     position: fixed; left: 0; right: 0; bottom: 0;
-    display: grid; grid-template-columns: repeat(7, 1fr);
+    display: grid; grid-template-columns: repeat(var(--nav-count, 8), 1fr);
     gap: 2px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     background: oklch(0.135 0.006 50 / 0.85);
     backdrop-filter: blur(18px) saturate(140%);
@@ -84,7 +84,7 @@
     appearance: none; background: transparent; border: 0; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     padding: 8px 1px 6px; border-radius: 12px;
-    color: var(--fg-3); font-family: var(--sans); font-size: 9px; font-weight: 600;
+    color: var(--fg-3); font-family: var(--sans); font-size: 8px; font-weight: 600;
     letter-spacing: 0.01em;
     transition: color .15s, background .15s;
   }
@@ -92,6 +92,7 @@
   .nav-btn.active { color: var(--ember); }
   .nav-btn.active svg { stroke: var(--ember); }
   .nav-btn:active { background: var(--surface); }
+  .nav-btn.section-hidden { display: none; }
 
   .screen { padding: 14px var(--pad) 0; display: none; max-width: 480px; margin: 0 auto; transform-origin: 50% 24px; }
   .screen.active { display: block; }
@@ -178,6 +179,8 @@
               letter-spacing: 0.10em; text-transform: uppercase; color: var(--fg-3); }
   .stat-date { font-family: var(--num); font-size: 10px; color: var(--fg-4); margin-top: -1px; letter-spacing: 0.02em; }
   .stat .flame { color: var(--ember); }
+  .burned-calories { color: var(--good) !important; }
+  .burned-calories .unit { color: var(--good) !important; opacity: .85; }
 
   .deload-banner {
     background: var(--gold-soft); border: 1px solid oklch(0.85 0.13 95 / 0.3);
@@ -693,6 +696,27 @@
     transform: rotate(90deg); color: var(--ember); background: var(--ember-soft);
   }
   .health-workout-detail { padding: 0 0 12px; }
+  .food-items { display: grid; gap: 8px; padding-top: 10px; }
+  .food-item {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: baseline;
+    padding: 10px 12px; background: var(--bg-soft);
+    border: 1px solid var(--line-soft); border-radius: 10px;
+  }
+  .food-item-name { font-size: 13px; font-weight: 650; color: var(--fg); }
+  .food-item-kcal { font-family: var(--num); font-size: 13px; font-weight: 800; color: var(--fg); }
+  .food-item-macros, .food-item-micros {
+    grid-column: 1 / -1; font-family: var(--num); font-size: 10px;
+    color: var(--fg-3); letter-spacing: 0.02em;
+  }
+  .food-item-micros { color: var(--fg-4); }
+  .macro-bar {
+    display: flex; overflow: hidden; height: 10px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--line-soft); margin: 12px 0;
+  }
+  .macro-bar span { display: block; min-width: 2px; }
+  .macro-protein { background: #5fcf6f; }
+  .macro-carbs { background: #4a9eff; }
+  .macro-fat { background: #ff9f43; }
   .progress-day-summary {
     margin: -4px 0 14px; color: var(--fg-3);
     font-family: var(--num); font-size: 11px; letter-spacing: 0.03em;
@@ -959,6 +983,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="5" width="10" height="14" rx="4"/><path d="M9 5V3h6v2M9 19v2h6v-2M10 12h4"/></svg>
     <span>Часы</span>
   </button>
+  <button class="nav-btn" data-screen="food" aria-label="Еда">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v8M10 3v8M8 3v18"/><path d="M4 11h8"/><path d="M17 3v18"/><path d="M17 3c2 2.4 3 4.7 3 7 0 2-1.2 3.4-3 3.4"/></svg>
+    <span>Еда</span>
+  </button>
   <button class="nav-btn" data-screen="history" aria-label="История">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     <span>История</span>
@@ -1082,6 +1110,17 @@
   <div id="health-workouts"></div>
 </div>
 
+<!-- FOOD -->
+<div class="screen" id="screen-food">
+  <h1>Еда</h1>
+  <div class="subtitle">Yazio / питание из Apple Health</div>
+  <input class="file-input" type="file" id="food-import-file" accept=".zip,.xml,application/zip,application/xml,text/xml" onchange="importAppleHealthFile(this.files[0]); this.value='';">
+  <button class="btn-secondary" onclick="document.getElementById('food-import-file').click()">Импорт Apple Health / Yazio ZIP</button>
+  <div id="food-overview"></div>
+  <h2>Дни</h2>
+  <div id="food-days"></div>
+</div>
+
 <!-- HISTORY -->
 <div class="screen" id="screen-history">
   <h1>История</h1>
@@ -1112,6 +1151,9 @@
   </div>
   <button class="btn-secondary" onclick="testTimerSignal()">Проверить сигнал таймера</button>
   <div class="support-note" id="signal-support-note"></div>
+
+  <h2>Разделы</h2>
+  <div id="section-toggles"></div>
   
   <h2>Программа</h2>
   <div class="info-box"><b>Программа v<span id="prog-version">1</span></b> — редактируй упражнения, подходы, повторы. История прошлых программ сохраняется.</div>
@@ -1188,17 +1230,31 @@ const DEFAULT_PROGRAM = {
 };
 const ROTATION = { odd: ["upperA", "lower", "upperB"], even: ["lower", "upperA", "upperB"] };
 const HEALTH_IMPORT_START_DATE = '2026-05-16';
+const OPTIONAL_SECTIONS = [
+  { key: 'workout', label: 'Тренировка' },
+  { key: 'progress', label: 'Графики' },
+  { key: 'measure', label: 'Замеры' },
+  { key: 'health', label: 'Часы' },
+  { key: 'food', label: 'Еда' },
+  { key: 'history', label: 'История' }
+];
+const ALWAYS_VISIBLE_SECTIONS = new Set(['dashboard', 'settings']);
 
 // ===== STATE =====
 let currentDay = null;
 let currentWorkout = null;
 let timerInterval = null;
 let timerSeconds = 0;
+let timerEndAt = null;
+let timerDurationSeconds = 0;
+let timerFinished = false;
+let timerAutocloseTimeout = null;
 let activeSwapExIdx = null;
 let editorDay = "upperA";
 let editingHistoryIndex = null;
 let progressDay = null;
 let dashboardCalendarAnchor = new Date();
+const TIMER_STATE_KEY = 'active_timer_state';
 
 function escapeHTML(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
@@ -1264,6 +1320,8 @@ function filterHealthRows(rows) {
 }
 function getHealthDaily() { return filterHealthRows(readJSON('apple_health_daily', [])); }
 function saveHealthDaily(rows) { localStorage.setItem('apple_health_daily', JSON.stringify(filterHealthRows(rows))); }
+function getFoodDaily() { return filterHealthRows(readJSON('yazio_food_daily', [])); }
+function saveFoodDaily(rows) { localStorage.setItem('yazio_food_daily', JSON.stringify(filterHealthRows(rows))); }
 function getHealthImportMeta() { return readJSON('apple_health_import', null); }
 function saveHealthImportMeta(meta) { localStorage.setItem('apple_health_import', JSON.stringify(meta)); }
 function getGoals() { return readJSON('goals', {}); }
@@ -1280,11 +1338,24 @@ function getStartDate() {
   return d;
 }
 function setStartDate(d) { localStorage.setItem('start_date', d); updateWeekDisplay(); renderDashboard(); }
+function getDefaultSectionSettings() {
+  return Object.fromEntries(OPTIONAL_SECTIONS.map(section => [section.key, true]));
+}
+function normalizeSectionSettings(sections) {
+  const defaults = getDefaultSectionSettings();
+  Object.keys(defaults).forEach(key => {
+    if (sections && Object.prototype.hasOwnProperty.call(sections, key)) {
+      defaults[key] = sections[key] !== false;
+    }
+  });
+  return defaults;
+}
 function getSettings() {
   const stored = readJSON('settings', {});
   return {
     timer: stored.timer !== false,
-    autoclose: stored.autoclose !== false
+    autoclose: stored.autoclose !== false,
+    sections: normalizeSectionSettings(stored.sections)
   };
 }
 function saveSettings(s) { localStorage.setItem('settings', JSON.stringify(s)); }
@@ -1640,7 +1711,27 @@ function initTapAnimations() {
 }
 
 // ===== NAV =====
+function isSectionVisible(name, settings = getSettings()) {
+  if (ALWAYS_VISIBLE_SECTIONS.has(name)) return true;
+  return settings.sections && settings.sections[name] !== false;
+}
+function applySectionVisibility() {
+  const settings = getSettings();
+  const nav = document.querySelector('.nav');
+  let visibleCount = 0;
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    const visible = isSectionVisible(btn.dataset.screen, settings);
+    btn.classList.toggle('section-hidden', !visible);
+    btn.hidden = !visible;
+    if (visible) visibleCount++;
+  });
+  if (nav) nav.style.setProperty('--nav-count', String(Math.max(1, visibleCount)));
+  const active = document.querySelector('.screen.active');
+  const activeName = active ? active.id.replace(/^screen-/, '') : 'dashboard';
+  if (!isSectionVisible(activeName, settings)) switchToScreen('dashboard', false);
+}
 function switchToScreen(name, animate = true) {
+  if (!isSectionVisible(name)) name = 'dashboard';
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === name));
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById('screen-' + name);
@@ -1652,6 +1743,7 @@ function switchToScreen(name, animate = true) {
   if (name === 'progress') initProgress();
   if (name === 'measure') renderMeasures();
   if (name === 'health') renderHealth();
+  if (name === 'food') renderFood();
   if (name === 'settings') initSettings();
   if (animate) animateScreen(screen);
 }
@@ -1751,7 +1843,7 @@ function renderRecoverySummary() {
       <div class="stat"><div class="stat-val">${sleep}</div><div class="stat-lbl">Сон</div><div class="stat-date">${formatHealthStatDate(sleepRow)}</div></div>
       <div class="stat"><div class="stat-val">${hrv}</div><div class="stat-lbl">HRV</div><div class="stat-date">${formatHealthStatDate(hrvRow)}</div></div>
       <div class="stat"><div class="stat-val">${rhr}</div><div class="stat-lbl">Пульс покоя</div><div class="stat-date">${formatHealthStatDate(rhrRow)}</div></div>
-      <div class="stat"><div class="stat-val">${active}</div><div class="stat-lbl">Активные</div><div class="stat-date">${formatHealthStatDate(activeRow)}</div></div>
+      <div class="stat"><div class="stat-val burned-calories">${active}</div><div class="stat-lbl">Активные</div><div class="stat-date">${formatHealthStatDate(activeRow)}</div></div>
     </div>
     <div class="support-note">Последний день восстановления: ${date} (${ageText}). ${oldText}${activityDate}</div>`;
 }
@@ -2405,47 +2497,110 @@ async function testTimerSignal() {
   flashTimerSignal();
   alert(`Проверка: звук ${sound ? 'отправлен' : 'заблокирован браузером'}, вибрация ${vib ? 'отправлена' : 'не поддерживается или заблокирована'}.`);
 }
-function startTimer(s) {
-  stopTimer();
-  timerSeconds = s;
-  primeTimerAudio();
-  document.getElementById('timer-bar').classList.add('active');
-  updateTimerDisplay();
-  timerInterval = setInterval(() => {
-    timerSeconds--;
-    updateTimerDisplay();
-    if (timerSeconds <= 0) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      const settings = getSettings();
-      fireTimerSignal();
-      if (settings.autoclose) {
-        setTimeout(() => { document.getElementById('timer-bar').classList.remove('active'); }, 3200);
-      }
-    }
-  }, 1000);
+function saveTimerState() {
+  if (!timerEndAt) return;
+  localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({
+    endAt: timerEndAt,
+    duration: timerDurationSeconds,
+    savedAt: Date.now()
+  }));
 }
-function stopTimer() {
+function clearTimerState() {
+  localStorage.removeItem(TIMER_STATE_KEY);
+}
+function clearTimerHandles() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
-  document.getElementById('timer-bar').classList.remove('active');
+  if (timerAutocloseTimeout) clearTimeout(timerAutocloseTimeout);
+  timerAutocloseTimeout = null;
+}
+function getTimerRemainingSeconds() {
+  if (!timerEndAt) return Math.max(0, timerSeconds || 0);
+  return Math.max(0, Math.ceil((timerEndAt - Date.now()) / 1000));
+}
+function finishTimer() {
+  if (timerFinished) return;
+  timerFinished = true;
+  timerSeconds = 0;
+  updateTimerDisplay();
+  clearTimerHandles();
+  clearTimerState();
+  fireTimerSignal();
+  if (getSettings().autoclose) {
+    timerAutocloseTimeout = setTimeout(() => {
+      const bar = document.getElementById('timer-bar');
+      if (bar) bar.classList.remove('active');
+      timerEndAt = null;
+    }, 3200);
+  }
+}
+function tickTimer() {
+  if (!timerEndAt) return;
+  timerSeconds = getTimerRemainingSeconds();
+  updateTimerDisplay();
+  if (timerSeconds <= 0) finishTimer();
+}
+function startTimer(s) {
+  stopTimer();
+  const seconds = Math.max(1, Math.round(Number(s) || 0));
+  timerDurationSeconds = seconds;
+  timerEndAt = Date.now() + seconds * 1000;
+  timerFinished = false;
+  timerSeconds = seconds;
+  saveTimerState();
+  primeTimerAudio();
+  document.getElementById('timer-bar').classList.add('active');
+  tickTimer();
+  timerInterval = setInterval(tickTimer, 500);
+}
+function stopTimer(options = {}) {
+  clearTimerHandles();
+  timerEndAt = null;
+  timerDurationSeconds = 0;
+  timerFinished = false;
+  timerSeconds = 0;
+  if (options.clearState !== false) clearTimerState();
+  const bar = document.getElementById('timer-bar');
+  if (bar) bar.classList.remove('active', 'done-pulse');
 }
 function updateTimerDisplay() {
-  const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
-  const s = (timerSeconds % 60).toString().padStart(2, '0');
+  const secondsLeft = Math.max(0, Math.round(timerSeconds || 0));
+  const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+  const s = (secondsLeft % 60).toString().padStart(2, '0');
   const display = document.getElementById('timer-display');
+  if (!display) return;
   display.textContent = `${m}:${s}`;
-  // Color shift as it approaches zero
   const bar = document.getElementById('timer-bar');
-  if (timerSeconds <= 0) {
+  if (!bar) return;
+  if (secondsLeft <= 0) {
     bar.style.background = '#5fcf6f';
     display.textContent = 'Готов!';
-  } else if (timerSeconds <= 10) {
+  } else if (secondsLeft <= 10) {
     bar.style.background = '#c33';
   } else {
     bar.style.background = '#ff6b00';
   }
 }
+function restoreTimerState() {
+  const stored = readJSON(TIMER_STATE_KEY, null);
+  if (!stored || !stored.endAt) return;
+  timerEndAt = Number(stored.endAt);
+  timerDurationSeconds = Number(stored.duration) || 0;
+  timerFinished = false;
+  if (!Number.isFinite(timerEndAt)) {
+    stopTimer();
+    return;
+  }
+  const bar = document.getElementById('timer-bar');
+  if (bar) bar.classList.add('active');
+  tickTimer();
+  if (timerEndAt) timerInterval = setInterval(tickTimer, 500);
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) tickTimer();
+});
+window.addEventListener('focus', tickTimer);
+window.addEventListener('pageshow', tickTimer);
 
 // ===== FINISH =====
 document.getElementById('finish-btn').addEventListener('click', () => {
@@ -2963,9 +3118,13 @@ function formatHealthValue(row, key, unit = '', transform = null) {
     : String(value);
   return unit ? `${text} ${unit}` : text;
 }
+function isBurnedEnergyKey(key) {
+  return ['active_energy_kcal', 'basal_energy_kcal', 'workout_energy_kcal', 'workout_basal_energy_kcal'].includes(key);
+}
 function renderHealthStat(row, key, label, unit = '', transform = null) {
+  const valueClass = isBurnedEnergyKey(key) ? 'stat-val burned-calories' : 'stat-val';
   return `<div class="stat">
-    <div class="stat-val">${formatHealthValue(row, key, unit, transform)}</div>
+    <div class="${valueClass}">${formatHealthValue(row, key, unit, transform)}</div>
     <div class="stat-lbl">${label}</div>
     <div class="stat-date">${formatHealthStatDate(row)}</div>
   </div>`;
@@ -3222,12 +3381,13 @@ function renderHealthCharts() {
     const first = pts[0].y, last = pts[pts.length - 1].y;
     const delta = round1(last - first);
     const unit = f.unit ? ` ${f.unit}` : '';
+    const valueClass = isBurnedEnergyKey(f.key) ? 'chart-stat-value burned-calories' : 'chart-stat-value';
     return `<div class="chart-card">
       <div class="chart-title">${f.label}</div>
       <div class="chart-subtitle">${f.desc}</div>
       <div class="chart-stats">
-        <div><span class="chart-stat-label">Последнее:</span> <span class="chart-stat-value">${last}${unit}</span></div>
-        <div><span class="chart-stat-label">Δ:</span> <span class="chart-stat-value">${delta >= 0 ? '+' : ''}${delta}${unit}</span></div>
+        <div><span class="chart-stat-label">Последнее:</span> <span class="${valueClass}">${last}${unit}</span></div>
+        <div><span class="chart-stat-label">Δ:</span> <span class="${valueClass}">${delta >= 0 ? '+' : ''}${delta}${unit}</span></div>
       </div>
       ${renderLineChart(pts, f.color, null, { reducePoints: true, maxPoints: 72, highlightExtremes: true })}
     </div>`;
@@ -3256,7 +3416,7 @@ function renderHealthWorkouts() {
     const totalCount = monthRows.reduce((sum, row) => sum + (row.workouts_count || 0), 0);
     const totalMinutes = round1(monthRows.reduce((sum, row) => sum + (row.workout_minutes || 0), 0));
     const totalEnergy = round1(monthRows.reduce((sum, row) => sum + (row.workout_energy_kcal || 0), 0));
-    const energyText = totalEnergy ? ` · сожжено ${totalEnergy} ккал` : '';
+    const energyText = totalEnergy ? ` · <span class="burned-calories">сожжено ${totalEnergy} ккал</span>` : '';
     const workouts = monthRows.map(row => {
       const date = new Date(row.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
       const types = row.workout_types
@@ -3269,7 +3429,7 @@ function renderHealthWorkouts() {
         <summary>
           <div>
             <div class="history-summary-title">${date}</div>
-            <div class="history-summary-sub">${row.workouts_count || 0} трен. · ${row.workout_minutes || 0} мин.${row.workout_energy_kcal ? ` · ${row.workout_energy_kcal} ккал` : ''}</div>
+            <div class="history-summary-sub">${row.workouts_count || 0} трен. · ${row.workout_minutes || 0} мин.${row.workout_energy_kcal ? ` · <span class="burned-calories">${row.workout_energy_kcal} ккал</span>` : ''}</div>
           </div>
           <div class="health-workout-chevron">›</div>
         </summary>
@@ -3277,7 +3437,7 @@ function renderHealthWorkouts() {
           <div class="chart-stats">
             <div><span class="chart-stat-label">Тренировки:</span> <span class="chart-stat-value">${row.workouts_count || 0}</span></div>
             <div><span class="chart-stat-label">Минуты:</span> <span class="chart-stat-value">${row.workout_minutes || 0}</span></div>
-            ${row.workout_energy_kcal ? `<div><span class="chart-stat-label">Ккал:</span> <span class="chart-stat-value">${row.workout_energy_kcal}</span></div>` : ''}
+            ${row.workout_energy_kcal ? `<div><span class="chart-stat-label">Ккал:</span> <span class="chart-stat-value burned-calories">${row.workout_energy_kcal}</span></div>` : ''}
           </div>
           ${types ? `<div class="chart-subtitle">${escapeHTML(types)}</div>` : '<div class="chart-subtitle">Типы тренировок не указаны в экспорте.</div>'}
         </div>
@@ -3293,6 +3453,125 @@ function renderHealthWorkouts() {
       </summary>
       <div class="history-details">
         ${workouts}
+      </div>
+    </details>`;
+  }).join('');
+}
+
+// ===== FOOD =====
+function formatFoodValue(value, unit = '') {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const rounded = roundFoodValue(Number(value));
+  const text = Number.isInteger(rounded) ? String(rounded) : String(rounded).replace('.', ',');
+  return unit ? `${text} ${unit}` : text;
+}
+function renderMacroBar(day) {
+  const proteinKcal = (day.protein_g || 0) * 4;
+  const carbsKcal = (day.carbs_g || 0) * 4;
+  const fatKcal = (day.fat_g || 0) * 9;
+  const total = proteinKcal + carbsKcal + fatKcal;
+  if (!total) return '';
+  const pct = value => Math.max(2, value / total * 100);
+  return `<div class="macro-bar">
+    <span class="macro-protein" style="width:${pct(proteinKcal)}%"></span>
+    <span class="macro-carbs" style="width:${pct(carbsKcal)}%"></span>
+    <span class="macro-fat" style="width:${pct(fatKcal)}%"></span>
+  </div>`;
+}
+const FOOD_MICRO_LABELS = [
+  { key: 'fiber_g', label: 'клетч.', unit: 'г' },
+  { key: 'sugar_g', label: 'сахар', unit: 'г' },
+  { key: 'sodium_mg', label: 'натрий', unit: 'мг' },
+  { key: 'potassium_mg', label: 'калий', unit: 'мг' },
+  { key: 'calcium_mg', label: 'кальций', unit: 'мг' },
+  { key: 'iron_mg', label: 'железо', unit: 'мг' },
+  { key: 'magnesium_mg', label: 'магний', unit: 'мг' },
+  { key: 'cholesterol_mg', label: 'холест.', unit: 'мг' },
+  { key: 'vitamin_c_mg', label: 'вит. C', unit: 'мг' },
+  { key: 'vitamin_d_mcg', label: 'вит. D', unit: 'мкг' },
+  { key: 'vitamin_b12_mcg', label: 'B12', unit: 'мкг' },
+  { key: 'zinc_mg', label: 'цинк', unit: 'мг' }
+];
+function getFoodMicroParts(row, limit = 6) {
+  const parts = FOOD_MICRO_LABELS
+    .filter(item => Number(row[item.key]) > 0)
+    .map(item => `${item.label} ${formatFoodValue(row[item.key], item.unit)}`);
+  return parts.slice(0, limit);
+}
+function renderFoodMicros(row, limit = 6) {
+  const parts = getFoodMicroParts(row, limit);
+  return parts.length ? `<div class="food-item-micros">${parts.join(' · ')}</div>` : '';
+}
+function renderFood() {
+  renderFoodOverview();
+  renderFoodDays();
+}
+function renderFoodOverview() {
+  const box = document.getElementById('food-overview');
+  if (!box) return;
+  const rows = getFoodDaily();
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty-state">Пока нет питания. Импортируй Apple Health export.zip, где Yazio пишет нутриенты и продукты.</div>';
+    return;
+  }
+  const latest = rows[rows.length - 1];
+  const date = new Date(latest.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  box.innerHTML = `<div class="chart-card">
+    <div class="chart-title">${date}</div>
+    <div class="chart-subtitle">Последний день питания из Yazio · ${latest.food_count || 0} продуктов</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-val">${formatFoodValue(latest.calories_kcal, 'ккал')}</div><div class="stat-lbl">Калории</div></div>
+      <div class="stat"><div class="stat-val">${formatFoodValue(latest.protein_g, 'г')}</div><div class="stat-lbl">Белки</div></div>
+      <div class="stat"><div class="stat-val">${formatFoodValue(latest.carbs_g, 'г')}</div><div class="stat-lbl">Угли</div></div>
+      <div class="stat"><div class="stat-val">${formatFoodValue(latest.fat_g, 'г')}</div><div class="stat-lbl">Жиры</div></div>
+    </div>
+    ${renderMacroBar(latest)}
+    <div class="chart-stats">
+      <div><span class="chart-stat-label">Сахар:</span> <span class="chart-stat-value">${formatFoodValue(latest.sugar_g, 'г')}</span></div>
+      <div><span class="chart-stat-label">Клетчатка:</span> <span class="chart-stat-value">${formatFoodValue(latest.fiber_g, 'г')}</span></div>
+      <div><span class="chart-stat-label">Вода:</span> <span class="chart-stat-value">${formatFoodValue(latest.water_ml, 'мл')}</span></div>
+      <div><span class="chart-stat-label">Натрий:</span> <span class="chart-stat-value">${formatFoodValue(latest.sodium_mg, 'мг')}</span></div>
+      <div><span class="chart-stat-label">Калий:</span> <span class="chart-stat-value">${formatFoodValue(latest.potassium_mg, 'мг')}</span></div>
+    </div>
+  </div>`;
+}
+function renderFoodItem(item) {
+  return `<div class="food-item">
+    <div class="food-item-name">${escapeHTML(item.name || 'Без названия')}</div>
+    <div class="food-item-kcal">${formatFoodValue(item.calories_kcal, 'ккал')}</div>
+    <div class="food-item-macros">Б ${formatFoodValue(item.protein_g, 'г')} · Ж ${formatFoodValue(item.fat_g, 'г')} · У ${formatFoodValue(item.carbs_g, 'г')}${item.sugar_g ? ` · сахар ${formatFoodValue(item.sugar_g, 'г')}` : ''}</div>
+    ${renderFoodMicros(item, 5)}
+  </div>`;
+}
+function renderFoodDays() {
+  const box = document.getElementById('food-days');
+  if (!box) return;
+  const rows = getFoodDaily().slice().reverse();
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty-state">Дней питания пока нет.</div>';
+    return;
+  }
+  box.innerHTML = rows.map(row => {
+    const date = new Date(row.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const items = (row.items || []).slice().sort((a, b) => (b.calories_kcal || 0) - (a.calories_kcal || 0));
+    return `<details class="history-day">
+      <summary>
+        <div>
+          <div class="history-summary-title">${date}</div>
+          <div class="history-summary-sub">${formatFoodValue(row.calories_kcal, 'ккал')} · Б ${formatFoodValue(row.protein_g, 'г')} · Ж ${formatFoodValue(row.fat_g, 'г')} · У ${formatFoodValue(row.carbs_g, 'г')} · ${row.food_count || items.length} прод.</div>
+        </div>
+        <div class="history-chevron">›</div>
+      </summary>
+      <div class="history-details">
+        ${renderMacroBar(row)}
+        <div class="chart-stats">
+          <div><span class="chart-stat-label">Сахар:</span> <span class="chart-stat-value">${formatFoodValue(row.sugar_g, 'г')}</span></div>
+          <div><span class="chart-stat-label">Клетчатка:</span> <span class="chart-stat-value">${formatFoodValue(row.fiber_g, 'г')}</span></div>
+          <div><span class="chart-stat-label">Вода:</span> <span class="chart-stat-value">${formatFoodValue(row.water_ml, 'мл')}</span></div>
+          <div><span class="chart-stat-label">Натрий:</span> <span class="chart-stat-value">${formatFoodValue(row.sodium_mg, 'мг')}</span></div>
+          <div><span class="chart-stat-label">Калий:</span> <span class="chart-stat-value">${formatFoodValue(row.potassium_mg, 'мг')}</span></div>
+        </div>
+        <div class="food-items">${items.map(renderFoodItem).join('')}</div>
       </div>
     </details>`;
   }).join('');
@@ -3321,21 +3600,61 @@ const HEALTH_TYPES = {
   waistCircumference: 'HKQuantityTypeIdentifierWaistCircumference',
   sleep: 'HKCategoryTypeIdentifierSleepAnalysis'
 };
+const FOOD_TYPES = {
+  dietaryEnergy: { type: 'HKQuantityTypeIdentifierDietaryEnergyConsumed', key: 'calories_kcal' },
+  protein: { type: 'HKQuantityTypeIdentifierDietaryProtein', key: 'protein_g' },
+  carbs: { type: 'HKQuantityTypeIdentifierDietaryCarbohydrates', key: 'carbs_g' },
+  fat: { type: 'HKQuantityTypeIdentifierDietaryFatTotal', key: 'fat_g' },
+  saturatedFat: { type: 'HKQuantityTypeIdentifierDietaryFatSaturated', key: 'saturated_fat_g' },
+  monounsaturatedFat: { type: 'HKQuantityTypeIdentifierDietaryFatMonounsaturated', key: 'monounsaturated_fat_g' },
+  polyunsaturatedFat: { type: 'HKQuantityTypeIdentifierDietaryFatPolyunsaturated', key: 'polyunsaturated_fat_g' },
+  sugar: { type: 'HKQuantityTypeIdentifierDietarySugar', key: 'sugar_g' },
+  fiber: { type: 'HKQuantityTypeIdentifierDietaryFiber', key: 'fiber_g' },
+  water: { type: 'HKQuantityTypeIdentifierDietaryWater', key: 'water_ml' },
+  sodium: { type: 'HKQuantityTypeIdentifierDietarySodium', key: 'sodium_mg' },
+  cholesterol: { type: 'HKQuantityTypeIdentifierDietaryCholesterol', key: 'cholesterol_mg' },
+  calcium: { type: 'HKQuantityTypeIdentifierDietaryCalcium', key: 'calcium_mg' },
+  iron: { type: 'HKQuantityTypeIdentifierDietaryIron', key: 'iron_mg' },
+  magnesium: { type: 'HKQuantityTypeIdentifierDietaryMagnesium', key: 'magnesium_mg' },
+  phosphorus: { type: 'HKQuantityTypeIdentifierDietaryPhosphorus', key: 'phosphorus_mg' },
+  potassium: { type: 'HKQuantityTypeIdentifierDietaryPotassium', key: 'potassium_mg' },
+  zinc: { type: 'HKQuantityTypeIdentifierDietaryZinc', key: 'zinc_mg' },
+  copper: { type: 'HKQuantityTypeIdentifierDietaryCopper', key: 'copper_mg' },
+  manganese: { type: 'HKQuantityTypeIdentifierDietaryManganese', key: 'manganese_mg' },
+  selenium: { type: 'HKQuantityTypeIdentifierDietarySelenium', key: 'selenium_mcg' },
+  vitaminA: { type: 'HKQuantityTypeIdentifierDietaryVitaminA', key: 'vitamin_a_mcg' },
+  vitaminB6: { type: 'HKQuantityTypeIdentifierDietaryVitaminB6', key: 'vitamin_b6_mg' },
+  vitaminB12: { type: 'HKQuantityTypeIdentifierDietaryVitaminB12', key: 'vitamin_b12_mcg' },
+  vitaminC: { type: 'HKQuantityTypeIdentifierDietaryVitaminC', key: 'vitamin_c_mg' },
+  vitaminD: { type: 'HKQuantityTypeIdentifierDietaryVitaminD', key: 'vitamin_d_mcg' },
+  vitaminE: { type: 'HKQuantityTypeIdentifierDietaryVitaminE', key: 'vitamin_e_mg' },
+  vitaminK: { type: 'HKQuantityTypeIdentifierDietaryVitaminK', key: 'vitamin_k_mcg' },
+  thiamin: { type: 'HKQuantityTypeIdentifierDietaryThiamin', key: 'thiamin_mg' },
+  riboflavin: { type: 'HKQuantityTypeIdentifierDietaryRiboflavin', key: 'riboflavin_mg' },
+  niacin: { type: 'HKQuantityTypeIdentifierDietaryNiacin', key: 'niacin_mg' },
+  folate: { type: 'HKQuantityTypeIdentifierDietaryFolate', key: 'folate_mcg' },
+  pantothenicAcid: { type: 'HKQuantityTypeIdentifierDietaryPantothenicAcid', key: 'pantothenic_acid_mg' }
+};
+const FOOD_TYPE_BY_HEALTH_TYPE = Object.fromEntries(Object.values(FOOD_TYPES).map(item => [item.type, item.key]));
+const FOOD_TOTAL_KEYS = [...new Set(Object.values(FOOD_TYPES).map(item => item.key))];
 function setHealthStatus(text) {
   const el = document.getElementById('health-import-status');
   if (el) el.textContent = text || '';
 }
 function renderHealthImportStatus() {
   const rows = getHealthDaily();
+  const foodRows = getFoodDaily();
   const meta = getHealthImportMeta();
-  if (!rows.length) {
+  if (!rows.length && !foodRows.length) {
     setHealthStatus('Apple Health еще не импортировался. Можно загрузить export.zip прямо сюда.');
     return;
   }
-  const first = rows[0].date;
-  const last = rows[rows.length - 1].date;
+  const dates = [...rows, ...foodRows].map(row => row.date).sort();
+  const first = dates[0];
+  const last = dates[dates.length - 1];
   const imported = meta && meta.imported_at ? new Date(meta.imported_at).toLocaleString('ru-RU') : '—';
-  setHealthStatus(`Импортировано ${rows.length} дн. Apple Health с ${HEALTH_IMPORT_START_DATE}: ${first} — ${last}. Последний импорт: ${imported}.`);
+  const foodText = foodRows.length ? ` Еда Yazio: ${foodRows.length} дн., ${foodRows.reduce((sum, row) => sum + (row.food_count || 0), 0)} продуктов.` : '';
+  setHealthStatus(`Импортировано ${rows.length} дн. Apple Health с ${HEALTH_IMPORT_START_DATE}: ${first} — ${last}.${foodText} Последний импорт: ${imported}.`);
 }
 function decodeXMLAttr(value) {
   return String(value || '')
@@ -3403,9 +3722,45 @@ function convertLengthToCm(value, unit) {
   if (u === 'in' || u === 'inch' || u === 'inches') return n * 2.54;
   return n;
 }
+function convertFoodValue(value, unit, key) {
+  const n = normalizeNumber(value);
+  if (n == null) return null;
+  const u = String(unit || '').toLowerCase();
+  if (key === 'calories_kcal') return u === 'kj' ? n / 4.184 : n;
+  if (key === 'water_ml') {
+    if (u === 'ml' || u === 'milliliter' || u === 'millilitre') return n;
+    if (u === 'l' || u === 'liter' || u === 'litre') return n * 1000;
+    if (u === 'fl_oz' || u === 'floz') return n * 29.5735;
+    return n;
+  }
+  if (key.endsWith('_mg')) {
+    if (u === 'g') return n * 1000;
+    if (u === 'mcg' || u === 'µg') return n / 1000;
+    return n;
+  }
+  if (key.endsWith('_mcg')) {
+    if (u === 'g') return n * 1000000;
+    if (u === 'mg') return n * 1000;
+    return n;
+  }
+  if (u === 'mg') return n / 1000;
+  if (u === 'kg') return n * 1000;
+  return n;
+}
+function parseMetadataValue(block, key) {
+  const pattern = new RegExp(`<MetadataEntry\\b[^>]*key="${key}"[^>]*value="([^"]*)"`, 'i');
+  const match = String(block || '').match(pattern);
+  return match ? decodeXMLAttr(match[1]) : '';
+}
+function roundFoodValue(value) {
+  if (value == null || !Number.isFinite(value)) return 0;
+  return Math.round(value * 10) / 10;
+}
 function createHealthAggregator() {
   const days = new Map();
-  const stats = { records: 0, usedRecords: 0, workouts: 0 };
+  const foodItems = new Map();
+  const seenFoodRecords = new Set();
+  const stats = { records: 0, usedRecords: 0, workouts: 0, foodRecords: 0, foodItems: 0 };
   const day = (key) => {
     if (!key || !isHealthDateAllowed(key)) return null;
     if (!days.has(key)) days.set(key, { date: key });
@@ -3442,6 +3797,34 @@ function createHealthAggregator() {
       if (!d || !source) return;
       if (!d.health_sources) d.health_sources = {};
       d.health_sources[key] = source;
+    },
+    addFoodRecord(attrs, block) {
+      if (attrs.sourceName !== 'Yazio') return;
+      const key = FOOD_TYPE_BY_HEALTH_TYPE[attrs.type];
+      if (!key) return;
+      const date = appleDateKey(attrs.startDate || attrs.creationDate);
+      if (!isHealthDateAllowed(date)) return;
+      const value = convertFoodValue(attrs.value, attrs.unit, key);
+      if (value == null || !Number.isFinite(value)) return;
+      const uuid = parseMetadataValue(block, 'HKExternalUUID') ||
+        `${date}|${attrs.startDate || ''}|${attrs.type}|${attrs.value || ''}`;
+      const dedupeKey = `${uuid}|${attrs.type}`;
+      if (seenFoodRecords.has(dedupeKey)) return;
+      seenFoodRecords.add(dedupeKey);
+      const name = parseMetadataValue(block, 'HKFoodType') || 'Без названия';
+      if (!foodItems.has(uuid)) {
+        foodItems.set(uuid, {
+          uuid,
+          date,
+          time: attrs.startDate || attrs.creationDate || '',
+          name,
+          source: attrs.sourceName
+        });
+      }
+      const item = foodItems.get(uuid);
+      if (!item.name || item.name === 'Без названия') item.name = name;
+      item[key] = roundFoodValue((item[key] || 0) + value);
+      stats.foodRecords++;
     },
     addRecord(attrs) {
       stats.records++;
@@ -3557,24 +3940,76 @@ function createHealthAggregator() {
           if (d.sleep_core_min) d.sleep_core_pct = round1(d.sleep_core_min / d.sleep_asleep_min * 100);
         }
       });
-      return rows;
+      const byDate = new Map();
+      Array.from(foodItems.values()).forEach(item => {
+        if (!item.date || !isHealthDateAllowed(item.date)) return;
+        const clean = {
+          uuid: item.uuid,
+          name: item.name || 'Без названия',
+          time: item.time || '',
+        };
+        FOOD_TOTAL_KEYS.forEach(key => { clean[key] = roundFoodValue(item[key] || 0); });
+        if (!FOOD_TOTAL_KEYS.some(key => clean[key])) return;
+        if (!byDate.has(item.date)) byDate.set(item.date, { date: item.date, source: 'Yazio', items: [] });
+        byDate.get(item.date).items.push(clean);
+      });
+      const foodRows = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+      foodRows.forEach(day => {
+        day.items.sort((a, b) => (a.time || '').localeCompare(b.time || '') || (b.calories_kcal || 0) - (a.calories_kcal || 0));
+        FOOD_TOTAL_KEYS.forEach(key => {
+          day[key] = roundFoodValue(day.items.reduce((sum, item) => sum + (item[key] || 0), 0));
+        });
+        day.food_count = day.items.length;
+      });
+      stats.foodItems = foodRows.reduce((sum, day) => sum + day.items.length, 0);
+      return { rows, foodRows };
     }
   };
 }
 function processHealthXMLText(text, aggregator) {
   const interesting = Object.values(HEALTH_TYPES);
-  text.replace(/<Record\b([^>]*?)(?:\/>|>)/g, (tag, attrsText) => {
-    if (interesting.some(t => tag.includes(t))) aggregator.addRecord(parseXMLAttrs(attrsText));
+  text.replace(/<Record\b([^>]*?)>([\s\S]*?)<\/Record>/g, (block, attrsText) => {
+    const attrs = parseXMLAttrs(attrsText);
+    if (interesting.includes(attrs.type)) aggregator.addRecord(attrs);
+    aggregator.addFoodRecord(attrs, block);
     return '';
   });
-  text.replace(/<WorkoutStatistics\b([^>]*?)(?:\/>|>)/g, (_, attrsText) => {
-    aggregator.addWorkoutStatistic(parseXMLAttrs(attrsText));
+  text.replace(/<Record\b([^>]*?)\/>/g, (tag, attrsText) => {
+    const attrs = parseXMLAttrs(attrsText);
+    if (interesting.includes(attrs.type)) aggregator.addRecord(attrs);
+    aggregator.addFoodRecord(attrs, tag);
     return '';
   });
-  text.replace(/<Workout\b([^>]*?)>/g, (_, attrsText) => {
+  text.replace(/<Workout\b([^>]*?)>([\s\S]*?)<\/Workout>/g, (block, attrsText, body) => {
     aggregator.addWorkout(parseXMLAttrs(attrsText));
+    body.replace(/<WorkoutStatistics\b([^>]*?)(?:\/>|>)/g, (_, statAttrsText) => {
+      aggregator.addWorkoutStatistic(parseXMLAttrs(statAttrsText));
+      return '';
+    });
     return '';
   });
+}
+function getUnclosedBlockStart(text, tag) {
+  const open = text.lastIndexOf(`<${tag}`);
+  if (open < 0) return -1;
+  const close = text.lastIndexOf(`</${tag}>`);
+  if (open < close) return -1;
+  const end = text.indexOf('>', open);
+  if (end >= 0 && text[end - 1] === '/') return -1;
+  return open;
+}
+function findSafeXMLCut(text) {
+  const unclosedStarts = [getUnclosedBlockStart(text, 'Record'), getUnclosedBlockStart(text, 'Workout')]
+    .filter(index => index >= 0);
+  const limit = unclosedStarts.length ? Math.min(...unclosedStarts) : text.length;
+  if (limit <= 0) return 0;
+  const chunk = text.slice(0, limit);
+  const candidates = [
+    chunk.lastIndexOf('</Record>') >= 0 ? chunk.lastIndexOf('</Record>') + '</Record>'.length : 0,
+    chunk.lastIndexOf('</Workout>') >= 0 ? chunk.lastIndexOf('</Workout>') + '</Workout>'.length : 0,
+    chunk.lastIndexOf('/>') >= 0 ? chunk.lastIndexOf('/>') + 2 : 0
+  ];
+  return Math.max(...candidates);
 }
 async function parseHealthXMLStream(stream, sizeHint = 0) {
   const reader = stream.getReader();
@@ -3588,7 +4023,7 @@ async function parseHealthXMLStream(stream, sizeHint = 0) {
     if (done) break;
     loaded += value.byteLength || 0;
     tail += decoder.decode(value, { stream: true });
-    const cut = tail.lastIndexOf('<');
+    const cut = findSafeXMLCut(tail);
     if (cut > 0) {
       processHealthXMLText(tail.slice(0, cut), aggregator);
       tail = tail.slice(cut);
@@ -3602,7 +4037,8 @@ async function parseHealthXMLStream(stream, sizeHint = 0) {
   }
   tail += decoder.decode();
   processHealthXMLText(tail, aggregator);
-  return { rows: aggregator.finalize(), stats: aggregator.stats };
+  const finalized = aggregator.finalize();
+  return { rows: finalized.rows, foodRows: finalized.foodRows, stats: aggregator.stats };
 }
 function readU16(view, offset) { return view.getUint16(offset, true); }
 function readU32(view, offset) { return view.getUint32(offset, true); }
@@ -3666,28 +4102,34 @@ async function importAppleHealthFile(file) {
       : { stream: file.stream(), size: file.size, entryName: file.name };
     setHealthStatus(`Нашел ${source.entryName}. Читаю XML...`);
     const result = await parseHealthXMLStream(source.stream, source.size);
-    if (!result.rows.length) {
-      setHealthStatus('XML прочитан, но нужные данные Apple Health не найдены.');
-      alert('Не нашел сон/HRV/пульс/шаги в этом файле.');
+    if (!result.rows.length && !result.foodRows.length) {
+      setHealthStatus('XML прочитан, но нужные данные Apple Health/Yazio не найдены.');
+      alert('Не нашел сон/HRV/пульс/шаги/питание в этом файле.');
       return;
     }
     saveHealthDaily(result.rows);
+    saveFoodDaily(result.foodRows || []);
+    const allDates = [...(result.rows || []), ...(result.foodRows || [])].map(row => row.date).sort();
     saveHealthImportMeta({
       file: file.name,
       xml_entry: source.entryName,
       imported_at: new Date().toISOString(),
       days: result.rows.length,
+      food_days: (result.foodRows || []).length,
+      food_items: result.stats.foodItems || 0,
       records_seen: result.stats.records,
       records_used: result.stats.usedRecords,
+      food_records: result.stats.foodRecords || 0,
       workouts: result.stats.workouts,
       limited_from: HEALTH_IMPORT_START_DATE,
-      range_start: result.rows[0].date,
-      range_end: result.rows[result.rows.length - 1].date
+      range_start: allDates[0] || null,
+      range_end: allDates[allDates.length - 1] || null
     });
     renderDashboard();
     renderHealth();
+    renderFood();
     initSettings();
-    alert(`Apple Health импортирован: ${result.rows.length} дней с ${HEALTH_IMPORT_START_DATE}. Если последние дни пустые, это нормально: часы просто не носились.`);
+    alert(`Импорт готов: Health ${result.rows.length} дн., еда ${result.foodRows.length} дн. / ${result.stats.foodItems || 0} продуктов с ${HEALTH_IMPORT_START_DATE}.`);
   } catch (e) {
     setHealthStatus(e.message || 'Не получилось импортировать Apple Health.');
     alert(e.message || 'Не получилось импортировать Apple Health.');
@@ -3703,6 +4145,8 @@ function initSettings() {
   document.getElementById('prog-version').textContent = getProgram().version;
   const signalNote = document.getElementById('signal-support-note');
   if (signalNote) signalNote.textContent = getSignalSupportText();
+  renderSectionToggles();
+  applySectionVisibility();
   renderHealthImportStatus();
 }
 function toggleSetting(key) {
@@ -3710,6 +4154,25 @@ function toggleSetting(key) {
   s[key] = !s[key];
   saveSettings(s);
   document.getElementById('toggle-' + key).classList.toggle('on', s[key]);
+}
+function renderSectionToggles() {
+  const box = document.getElementById('section-toggles');
+  if (!box) return;
+  const settings = getSettings();
+  box.innerHTML = OPTIONAL_SECTIONS.map(section => {
+    const on = settings.sections[section.key] !== false;
+    return `<div class="toggle-row">
+      <span>${section.label}</span>
+      <div class="toggle ${on ? 'on' : ''}" id="toggle-section-${section.key}" onclick="toggleSection('${section.key}')"></div>
+    </div>`;
+  }).join('');
+}
+function toggleSection(key) {
+  const settings = getSettings();
+  settings.sections[key] = settings.sections[key] === false;
+  saveSettings(settings);
+  applySectionVisibility();
+  renderSectionToggles();
 }
 
 // ===== PROGRAM EDITOR =====
@@ -3864,6 +4327,7 @@ function getExportPayload() {
     history: getHistory(),
     measures: getMeasures(),
     apple_health_daily: getHealthDaily(),
+    yazio_food_daily: getFoodDaily(),
     apple_health_import: getHealthImportMeta(),
     goals: getGoals(),
     program: getProgram(),
@@ -3921,6 +4385,7 @@ function getWorkoutSummaryForAI(workout) {
 function getAIExportPayload() {
   const history = getHistory();
   const health = getHealthDaily();
+  const food = getFoodDaily();
   return {
     schema: 'trenya-ai-analysis-v1',
     generated_at: new Date().toISOString(),
@@ -3931,13 +4396,16 @@ function getAIExportPayload() {
       last_workout: history[history.length - 1] ? getDateKey(history[history.length - 1].date) : null,
       body_measures_count: getMeasures().length,
       apple_health_days: health.length,
-      apple_health_range: health.length ? { start: health[0].date, end: health[health.length - 1].date } : null
+      apple_health_range: health.length ? { start: health[0].date, end: health[health.length - 1].date } : null,
+      yazio_food_days: food.length,
+      yazio_food_range: food.length ? { start: food[0].date, end: food[food.length - 1].date } : null
     },
     program: getProgram(),
     workouts: history.map(getWorkoutSummaryForAI),
     body_measures: getMeasures(),
     goals: getGoals(),
     apple_health_daily: health,
+    yazio_food_daily: food,
     apple_health_import: getHealthImportMeta()
   };
 }
@@ -3960,7 +4428,7 @@ function importDataFile(file) {
 }
 function importData(data) {
   const has = (key) => Object.prototype.hasOwnProperty.call(data, key);
-  if (!data || typeof data !== 'object' || !['history','measures','goals','program','start_date','settings','apple_health_daily'].some(has)) {
+  if (!data || typeof data !== 'object' || !['history','measures','goals','program','start_date','settings','apple_health_daily','yazio_food_daily'].some(has)) {
     alert('Это не похоже на backup-файл Трени.');
     return;
   }
@@ -3968,6 +4436,7 @@ function importData(data) {
   if (has('history')) saveHistory(Array.isArray(data.history) ? data.history : []);
   if (has('measures')) saveMeasures(Array.isArray(data.measures) ? data.measures : []);
   if (has('apple_health_daily')) saveHealthDaily(Array.isArray(data.apple_health_daily) ? data.apple_health_daily : []);
+  if (has('yazio_food_daily')) saveFoodDaily(Array.isArray(data.yazio_food_daily) ? data.yazio_food_daily : []);
   if (has('apple_health_import')) saveHealthImportMeta(data.apple_health_import && typeof data.apple_health_import === 'object' ? data.apple_health_import : null);
   if (has('goals')) saveGoals(data.goals && typeof data.goals === 'object' ? data.goals : {});
   if (has('program')) saveProgram(data.program && typeof data.program === 'object' ? data.program : DEFAULT_PROGRAM);
@@ -3985,6 +4454,8 @@ function resetAll() {
 function enforceHealthDateLimit() {
   const raw = readJSON('apple_health_daily', []);
   const filtered = filterHealthRows(raw);
+  const rawFood = readJSON('yazio_food_daily', []);
+  const filteredFood = filterHealthRows(rawFood);
   if (Array.isArray(raw) && raw.length !== filtered.length) {
     saveHealthDaily(filtered);
     const meta = getHealthImportMeta();
@@ -3998,14 +4469,17 @@ function enforceHealthDateLimit() {
       });
     }
   }
+  if (Array.isArray(rawFood) && rawFood.length !== filteredFood.length) saveFoodDaily(filteredFood);
 }
 
 // ===== INIT =====
 getProgram(); // ensure default saved
 enforceHealthDateLimit();
 initTapAnimations();
+applySectionVisibility();
 renderDashboard();
 animateScreen(document.getElementById('screen-dashboard'));
+restoreTimerState();
 window.addEventListener('beforeunload', (event) => {
   if (!hasWorkoutInput()) return;
   saveWorkoutDraft();
