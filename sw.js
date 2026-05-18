@@ -1,7 +1,8 @@
-const CACHE_NAME = "trenya-v26";
+const CACHE_NAME = "trenya-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./reset-cache.html",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
@@ -23,6 +24,10 @@ self.addEventListener("activate", (event) => {
       ))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 async function putInCache(request, response) {
